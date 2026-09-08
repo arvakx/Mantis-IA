@@ -12,9 +12,14 @@ venv/
 
 # Build and framework output
 .next/
+.vinext/
 dist/
 build/
 coverage/
+.wrangler/
+outputs/
+work/
+next-env.d.ts
 
 # Python
 __pycache__/
@@ -25,6 +30,7 @@ __pycache__/
 *.log
 tmp/
 temp/
+.site-scaffold/
 
 # Editors and operating systems
 .idea/

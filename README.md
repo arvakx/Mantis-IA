@@ -22,7 +22,27 @@ Evaluar en qué medida una plataforma digital asistida por IA puede mejorar el t
 
 ## Estado
 
-Proyecto en fase de definición y diseño para la XIV Feria de Ciencia, Tecnología e Innovación USTA 2026.
+Primera superficie funcional en desarrollo para la XIV Feria de Ciencia, Tecnología e Innovación USTA 2026.
+
+La versión actual incluye:
+
+- Tablero operativo responsivo.
+- Cinco máquinas de demostración con estados y prioridades.
+- Filtros y ficha dinámica de cada máquina.
+- Registro local de lecturas de horas.
+- Panel demostrativo del agente Mantis IA.
+- Flujo confirmado para crear una tarea preventiva.
+
+Los datos actuales son demostrativos. Las siguientes fases incorporarán persistencia, autenticación, manuales técnicos y la conexión segura con el modelo de IA.
+
+## Desarrollo local
+
+```bash
+npm install
+npm run dev
+```
+
+La aplicación se abre en `http://localhost:3000`.
 
 La documentación de planificación se encuentra en [`docs/`](docs/).
 
