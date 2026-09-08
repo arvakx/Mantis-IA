@@ -5,11 +5,12 @@ import {
   Activity, AlertTriangle, ArrowUpRight, Bell, Bot, CheckCircle2,
   ChevronRight, CircleDot, Clock3, FileText, Gauge, History,
   LayoutDashboard, Menu, Plus, ScanLine, Search, Send, Settings,
-  ShieldCheck, Sparkles, Wrench,
+  ShieldCheck, Sparkles, Wrench, LogOut,
 } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { LoginScreen, SESSION_KEY } from '@/components/login-screen';
 import {
   Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle,
 } from '@/components/ui/sheet';
@@ -70,6 +71,9 @@ function formatHours(value: number) {
 }
 
 export default function Home() {
+  const [sessionChecked, setSessionChecked] = useState(false);
+  const [authenticated, setAuthenticated] = useState(false);
+  const [userName, setUserName] = useState('Gabo');
   const [machines, setMachines] = useState(initialMachines);
   const [selectedId, setSelectedId] = useState('COMP-01');
   const [filter, setFilter] = useState<'Todas' | MachineStatus>('Todas');
@@ -89,6 +93,25 @@ export default function Home() {
   const warningCount = machines.filter((machine) => machine.status === 'Atención próxima').length;
 
   useEffect(() => {
+    const sessionTimer = window.setTimeout(() => {
+      const savedSession = window.localStorage.getItem(SESSION_KEY);
+      if (savedSession) {
+        try {
+          const session = JSON.parse(savedSession) as { name?: string };
+          setUserName(session.name?.trim() || 'Gabo');
+          setAuthenticated(true);
+        } catch {
+          window.localStorage.removeItem(SESSION_KEY);
+        }
+      }
+      setSessionChecked(true);
+    }, 0);
+
+    return () => window.clearTimeout(sessionTimer);
+  }, []);
+
+  useEffect(() => {
+    if (!authenticated) return;
     const context = (document as Document & { modelContext?: WebMcpContext }).modelContext;
     if (!context?.registerTool) return;
     const lifecycle = new AbortController();
@@ -142,7 +165,19 @@ export default function Home() {
     }, { signal: lifecycle.signal })).catch(reportError);
 
     return () => lifecycle.abort();
-  }, [machines]);
+  }, [authenticated, machines]);
+
+  function handleAuthenticated(name: string) {
+    setUserName(name);
+    setAuthenticated(true);
+  }
+
+  function logOut() {
+    window.localStorage.removeItem(SESSION_KEY);
+    setAuthenticated(false);
+    setAssistantOpen(false);
+    setMobileNavOpen(false);
+  }
 
   function registerReading() {
     setMachines((current) => current.map((machine) => machine.id === selected.id ? { ...machine, hours: machine.hours + 8 } : machine));
@@ -157,6 +192,11 @@ export default function Home() {
     setAssistantReply(`${selected.name} superó su intervalo preventivo en ${Math.max(selected.hours - selected.dueAt, 0)} h. Recomiendo revisar primero el nivel de aceite, el filtro y el registro de temperatura antes de autorizar una nueva jornada.`);
     setPrompt('');
   }
+
+  if (!sessionChecked) return <main className="session-loader" aria-label="Cargando Mantis IA"><div className="loader-mark">M</div></main>;
+  if (!authenticated) return <LoginScreen onAuthenticated={handleAuthenticated} />;
+
+  const initials = userName.split(/\s+/).map((part) => part[0]).join('').slice(0, 2).toUpperCase();
 
   return (
     <main className="mantis-shell">
@@ -198,7 +238,7 @@ export default function Home() {
             <div className="search-shell"><Search aria-hidden="true" /><input aria-label="Buscar máquinas" placeholder="Buscar máquina..." /><kbd>⌘ K</kbd></div>
             <Button variant="ghost" size="icon" className="icon-button" aria-label="Notificaciones"><Bell /><span className="notification-dot" /></Button>
             <Button className="primary-action" onClick={registerReading}><Plus data-icon="inline-start" /> Registrar lectura</Button>
-            <div className="profile-chip" aria-label="Usuario: Gabo, administrador"><span>GC</span><div><strong>Gabo</strong><small>Administrador</small></div></div>
+            <button className="profile-chip" aria-label={`Cerrar sesión de ${userName}`} onClick={logOut}><span>{initials}</span><div><strong>{userName}</strong><small>Administrador</small></div><LogOut className="logout-icon" aria-hidden="true" /></button>
           </div>
         </header>
 

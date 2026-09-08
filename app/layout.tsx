@@ -1,15 +1,21 @@
 import type { Metadata } from 'next';
-import { Manrope, JetBrains_Mono } from 'next/font/google';
+import { DM_Sans, IBM_Plex_Mono, Syne } from 'next/font/google';
 import './globals.css';
 
-const manrope = Manrope({
-  variable: '--font-manrope',
+const dmSans = DM_Sans({
+  variable: '--font-body',
   subsets: ['latin'],
 });
 
-const jetBrainsMono = JetBrains_Mono({
-  variable: '--font-jetbrains-mono',
+const syne = Syne({
+  variable: '--font-display',
   subsets: ['latin'],
+});
+
+const ibmPlexMono = IBM_Plex_Mono({
+  variable: '--font-tech',
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
 });
 
 export const metadata: Metadata = {
@@ -26,7 +32,7 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body
-        className={`${manrope.variable} ${jetBrainsMono.variable} antialiased`}
+        className={`${dmSans.variable} ${syne.variable} ${ibmPlexMono.variable} antialiased`}
       >
         {children}
       </body>
