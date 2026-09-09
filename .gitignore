@@ -31,6 +31,7 @@ __pycache__/
 tmp/
 temp/
 .site-scaffold/
+.codex-build/
 
 # Editors and operating systems
 .idea/
