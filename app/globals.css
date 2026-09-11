@@ -1172,6 +1172,17 @@ button.machine-row.selected { box-shadow: inset 4px 0 #7657ff; }
 }
 
 /* Dedicated asset inventory and experimental validation states */
+.priority-showcase { display: flex; flex-direction: column; gap: 14px; }
+.priority-showcase-head { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 18px 20px; border: 1px solid #dce3f0; border-radius: 16px; background: rgba(255,255,255,.94); box-shadow: 0 14px 34px rgba(35,49,85,.055); }
+.priority-showcase-head > div > span { color: #6c4ff1; font: 800 10px var(--font-tech); letter-spacing: .09em; }
+.priority-showcase-head h3 { margin: 3px 0 2px; color: #141e37; font-size: 20px; letter-spacing: -.025em; }
+.priority-showcase-head p { margin: 0; color: #738097; font-size: 13px; }
+.priority-card-stack { display: flex; flex-direction: column; gap: 14px; }
+.priority-machine-card { width: 100%; min-height: 260px; }
+.priority-tone-2 { background-position: center 43%; }
+.priority-tone-2::before { background: radial-gradient(circle at 76% 48%,transparent 0 14%,rgba(115,94,255,.2) 14.3% 14.8%,transparent 15.1% 20%,rgba(42,218,204,.11) 20.3% 20.8%,transparent 21.1%); }
+.priority-tone-3 { background-position: center 66%; }
+.priority-tone-3::before { background: radial-gradient(circle at 76% 48%,transparent 0 14%,rgba(202,255,77,.13) 14.3% 14.8%,transparent 15.1% 20%,rgba(52,199,232,.14) 20.3% 20.8%,transparent 21.1%); }
 .section-head-action { height: 38px; gap: 5px; padding-inline: 13px; color: #5539d8; border: 1px solid #d9d2fa; background: #f3f0ff; font-size: 12px; font-weight: 800; }
 .section-head-action:hover { color: #34209d; background: #e9e3ff; }
 .section-head-action svg { width: 15px; }
@@ -1209,6 +1220,8 @@ button.machine-row.selected { box-shadow: inset 4px 0 #7657ff; }
   .inventory-layout > .detail-column { display: grid; grid-template-columns: 1.2fr .8fr; }
 }
 @media (max-width:760px) {
+  .priority-showcase-head { align-items: stretch; flex-direction: column; }
+  .priority-showcase-head .section-head-action { width: 100%; }
   .inventory-intro { padding: 21px; }
   .inventory-controls { align-items: stretch; flex-direction: column; width: 100%; }
   .inventory-register { width: 100%; }

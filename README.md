@@ -27,8 +27,8 @@ Primera superficie funcional en desarrollo para la XIV Feria de Ciencia, Tecnolo
 La versión actual incluye:
 
 - Entrada directa al prototipo para evitar que el acceso distraiga las pruebas científicas.
-- Tablero operativo responsivo con lenguaje visual de cabina industrial, métricas gráficas y un resumen de tres prioridades.
-- Vista independiente de Máquinas con inventario completo, búsqueda, filtros, selección y acceso al registro de activos.
+- Tablero operativo responsivo con lenguaje visual de cabina industrial, métricas gráficas y tres tarjetas visuales de prioridad.
+- Vista independiente de Máquinas con inventario completo, búsqueda, filtros, selección, detalle contextual y acceso al registro de activos.
 - Escena industrial original para contextualizar el laboratorio sin representar una máquina real de la USTA.
 - Cinco máquinas de demostración con estados y prioridades.
 - Filtros y ficha central del activo con función, contexto operativo, condición y plan preventivo.

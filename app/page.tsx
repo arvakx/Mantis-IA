@@ -91,7 +91,6 @@ export default function Home() {
       return rank[a.status] - rank[b.status] || (a.dueAt - a.hours) - (b.dueAt - b.hours);
     })
     .slice(0, 3), [machines]);
-  const priorityMachine = priorityMachines[0] ?? selected;
 
   useEffect(() => {
     const storageTimer = window.setTimeout(() => {
@@ -359,35 +358,29 @@ export default function Home() {
                 <article className="metric-card metric-mint"><div className="metric-icon success"><ShieldCheck /></div><div className="metric-copy"><p>Cumplimiento del plan</p><strong>87%</strong><span>dato demostrativo</span></div><div className="metric-mini-ring"><span>87</span></div><ArrowUpRight className="metric-arrow" /></article>
               </section>
 
-              <section className="operations-grid">
-                <div className="main-column">
-                  <article className="priority-panel">
-                    <div className="priority-copy">
-                      <div className="priority-label"><span /> {priorityMachine.status === 'Vencida' ? 'PRIORIDAD CRÍTICA' : 'PRÓXIMA ATENCIÓN'}</div>
-                      <h3>{priorityMachine.name}</h3><p>{priorityMachine.id} · {priorityMachine.location}</p>
-                      <div className="priority-reason"><AlertTriangle aria-hidden="true" /><div><strong>{priorityMachine.status === 'Vencida' ? `Mantenimiento vencido por ${priorityMachine.hours - priorityMachine.dueAt} horas` : `Próximo servicio en ${priorityMachine.dueAt - priorityMachine.hours} horas`}</strong><span>{priorityMachine.nextTask}</span></div></div>
-                      <div className="priority-actions">
-                        <Button className="light-action" onClick={() => { setSelectedId(priorityMachine.id); setAssistantOpen(true); }}>Analizar con IA <Sparkles data-icon="inline-end" /></Button>
-                        <Button variant="ghost" className="transparent-action" onClick={() => { setSelectedId(priorityMachine.id); setAssetProfileOpen(true); }}>Ver ficha <ChevronRight data-icon="inline-end" /></Button>
-                      </div>
-                    </div>
-                    <div className="health-orbit" style={{ '--health': `${priorityMachine.health}%` } as React.CSSProperties}><div><strong>{priorityMachine.health}</strong><span>Salud estimada</span></div><i className="orbit-dot" /></div>
-                    <div className="technical-grid" aria-hidden="true" />
-                    <div className="priority-image-glow" aria-hidden="true" />
-                  </article>
-
-                  <article className="machine-panel overview-priorities">
-                    <div className="section-head">
-                      <div><h3>Prioridades inmediatas</h3><p>Resumen de los tres activos que requieren mayor atención.</p></div>
-                      <Button variant="ghost" className="section-head-action" onClick={() => setActiveView('machines')}>Ver inventario <ChevronRight data-icon="inline-end" /></Button>
-                    </div>
-                    <div className="machine-table" aria-label="Resumen de prioridades">
-                      <div className="machine-row table-head"><span>MÁQUINA</span><span>ESTADO</span><span>HORAS</span><span>PRÓXIMO SERVICIO</span><span>CONDICIÓN</span><span /></div>
-                      {renderMachineRows(priorityMachines)}
-                    </div>
-                  </article>
+              <section className="priority-showcase" aria-labelledby="priority-showcase-title">
+                <div className="priority-showcase-head">
+                  <div><span>FOCO OPERATIVO</span><h3 id="priority-showcase-title">Prioridades inmediatas</h3><p>Los tres activos que requieren atención primero, ordenados por urgencia.</p></div>
+                  <Button variant="ghost" className="section-head-action" onClick={() => setActiveView('machines')}>Ver inventario <ChevronRight data-icon="inline-end" /></Button>
                 </div>
-                {machineDetailColumn}
+                <div className="priority-card-stack">
+                  {priorityMachines.map((machine, index) => (
+                    <article className={`priority-panel priority-machine-card priority-tone-${index + 1}`} key={machine.id}>
+                      <div className="priority-copy">
+                        <div className="priority-label"><span /> {machine.status === 'Vencida' ? 'PRIORIDAD CRÍTICA' : 'ATENCIÓN PRÓXIMA'}</div>
+                        <h3>{machine.name}</h3><p>{machine.id} · {machine.location}</p>
+                        <div className="priority-reason"><AlertTriangle aria-hidden="true" /><div><strong>{machine.status === 'Vencida' ? `Mantenimiento vencido por ${machine.hours - machine.dueAt} horas` : `Próximo servicio en ${machine.dueAt - machine.hours} horas`}</strong><span>{machine.nextTask}</span></div></div>
+                        <div className="priority-actions">
+                          <Button className="light-action" onClick={() => { setSelectedId(machine.id); setAssistantOpen(true); }}>Analizar con IA <Sparkles data-icon="inline-end" /></Button>
+                          <Button variant="ghost" className="transparent-action" onClick={() => { setSelectedId(machine.id); setActiveView('machines'); }}>Ver en Máquinas <ChevronRight data-icon="inline-end" /></Button>
+                        </div>
+                      </div>
+                      <div className="health-orbit" style={{ '--health': `${machine.health}%` } as React.CSSProperties}><div><strong>{machine.health}</strong><span>Salud estimada</span></div><i className="orbit-dot" /></div>
+                      <div className="technical-grid" aria-hidden="true" />
+                      <div className="priority-image-glow" aria-hidden="true" />
+                    </article>
+                  ))}
+                </div>
               </section>
             </>
           ) : (
