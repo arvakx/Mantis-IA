@@ -326,7 +326,7 @@ export default function Home() {
             <div><p>Laboratorio Piloto <ChevronRight aria-hidden="true" /> {activeView === 'overview' ? 'Vista general' : 'Máquinas'}</p><div className="top-title-line"><h1>{activeView === 'overview' ? 'Estado operativo' : 'Inventario de activos'}</h1><span>{activeView === 'overview' ? 'Monitorea, anticipa y mantén tus activos en funcionamiento.' : 'Registra, consulta y valida la información técnica de cada máquina.'}</span></div></div>
           </div>
           <div className="top-actions">
-            <Button variant="ghost" size="icon" className="icon-button" aria-label="Notificaciones"><Bell /><span className="notification-dot" /></Button>
+            <Button hidden data-future-feature="notifications" variant="ghost" size="icon" className="icon-button" aria-label="Notificaciones"><Bell /><span className="notification-dot" /></Button>
             <Button className="primary-action" onClick={() => openEditor('create')}><Plus data-icon="inline-start" /> Registrar activo</Button>
             <div className="profile-chip" aria-label="Sesión de demostración"><span>GC</span><div><strong>Gabo</strong><small>Modo demostración</small></div></div>
           </div>
