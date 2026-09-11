@@ -3,8 +3,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   Activity, AlertTriangle, ArrowUpRight, Bell, Bot, CheckCircle2, ClipboardCheck,
-  ChevronRight, CircleDot, Clock3, FileText, Gauge, History,
-  LayoutDashboard, Menu, Pencil, Plus, ScanLine, Search, Send, Settings,
+  ChevronRight, Clock3, FileText, Gauge, History,
+  LayoutDashboard, Menu, Pencil, Plus, Radio, ScanLine, Search, Send, Settings,
   ShieldCheck, Sparkles, Wrench,
 } from 'lucide-react';
 
@@ -256,7 +256,7 @@ export default function Home() {
         <header className="top-bar">
           <div className="top-heading">
             <Button variant="ghost" size="icon" className="mobile-menu" aria-label="Abrir navegación" onClick={() => setMobileNavOpen((open) => !open)}><Menu /></Button>
-            <div><p>Laboratorio Piloto <ChevronRight aria-hidden="true" /> Vista general</p><h1>Estado operativo</h1></div>
+            <div><p>Laboratorio Piloto <ChevronRight aria-hidden="true" /> Vista general</p><div className="top-title-line"><h1>Estado operativo</h1><span>Monitorea, anticipa y mantén tus activos en funcionamiento.</span></div></div>
           </div>
           <div className="top-actions">
             <div className="search-shell"><Search aria-hidden="true" /><input aria-label="Buscar máquinas" placeholder="Buscar máquina..." /><kbd>⌘ K</kbd></div>
@@ -267,20 +267,26 @@ export default function Home() {
         </header>
 
         <div className="content-wrap">
-          <div className="page-intro">
-            <div>
-              <p className="eyebrow"><CircleDot aria-hidden="true" /> JUEVES, 10 DE SEPTIEMBRE</p>
-              <h2>El mantenimiento que necesita tu atención.</h2>
-              <p>Datos de demostración preparados para validar el flujo de la plataforma.</p>
+          <section className="visual-hero">
+            <div className="visual-hero-copy">
+              <Badge className="hero-status"><Sparkles /> PROTOTIPO ACTIVO</Badge>
+              <h2>El mantenimiento que necesita<br />tu <em>atención.</em></h2>
+              <p>Datos demostrativos para validar el flujo antes de trabajar con información real del laboratorio.</p>
+              <div className="hero-actions"><Button className="assistant-button" onClick={() => setAssistantOpen(true)}><Sparkles data-icon="inline-start" /> Consultar a Mantis IA</Button><Button variant="ghost" className="hero-case-button" onClick={() => setCaseWorkspaceOpen(true)}><ClipboardCheck data-icon="inline-start" /> Nuevo caso RCM</Button></div>
             </div>
-            <div className="intro-actions"><Button variant="outline" className="case-button" onClick={() => setCaseWorkspaceOpen(true)}><ClipboardCheck data-icon="inline-start" /> Nuevo caso RCM</Button><Button className="assistant-button" onClick={() => setAssistantOpen(true)}><Sparkles data-icon="inline-start" /> Consultar a Mantis IA</Button></div>
-          </div>
+            <div className="live-insight">
+              <div className="live-insight-icon"><Radio /></div>
+              <div><strong>Análisis de demostración</strong><span>La IA explica; el técnico decide.</span></div>
+              <i aria-label="Sistema disponible" />
+            </div>
+            <div className="hero-scanline" aria-hidden="true" />
+          </section>
 
           <section className="metric-grid" aria-label="Resumen operativo">
-            <article className="metric-card"><div className="metric-icon neutral"><Gauge /></div><div><p>Máquinas registradas</p><strong>{machines.length}</strong><span>en 4 zonas</span></div><ArrowUpRight className="metric-arrow" /></article>
-            <article className="metric-card"><div className="metric-icon warning"><Clock3 /></div><div><p>Atención próxima</p><strong>{warningCount}</strong><span>próximos 7 días</span></div><ArrowUpRight className="metric-arrow" /></article>
-            <article className="metric-card critical-card"><div className="metric-icon critical"><AlertTriangle /></div><div><p>Mantenimiento vencido</p><strong>{overdueCount}</strong><span>requiere prioridad</span></div><ArrowUpRight className="metric-arrow" /></article>
-            <article className="metric-card"><div className="metric-icon success"><ShieldCheck /></div><div><p>Cumplimiento del plan</p><strong>87%</strong><span>+6% este mes</span></div><ArrowUpRight className="metric-arrow" /></article>
+            <article className="metric-card metric-violet"><div className="metric-icon neutral"><Gauge /></div><div className="metric-copy"><p>Máquinas registradas</p><strong>{machines.length}</strong><span>en 4 zonas</span></div><div className="mini-bars" aria-hidden="true"><i /><i /><i /><i /><i /><i /></div><ArrowUpRight className="metric-arrow" /></article>
+            <article className="metric-card metric-amber"><div className="metric-icon warning"><Clock3 /></div><div className="metric-copy"><p>Atención próxima</p><strong>{warningCount}</strong><span>próximos 7 días</span></div><div className="mini-trend" aria-hidden="true"><i /><i /><i /><i /><i /></div><ArrowUpRight className="metric-arrow" /></article>
+            <article className="metric-card metric-coral critical-card"><div className="metric-icon critical"><AlertTriangle /></div><div className="metric-copy"><p>Mantenimiento vencido</p><strong>{overdueCount}</strong><span>requiere prioridad</span></div><div className="mini-bars coral" aria-hidden="true"><i /><i /><i /><i /><i /></div><ArrowUpRight className="metric-arrow" /></article>
+            <article className="metric-card metric-mint"><div className="metric-icon success"><ShieldCheck /></div><div className="metric-copy"><p>Cumplimiento del plan</p><strong>87%</strong><span>+6% este mes</span></div><div className="metric-mini-ring"><span>87</span></div><ArrowUpRight className="metric-arrow" /></article>
           </section>
 
           <section className="operations-grid">
@@ -297,6 +303,7 @@ export default function Home() {
                 </div>
                 <div className="health-orbit" style={{ '--health': '62%' } as React.CSSProperties}><div><strong>62</strong><span>Salud estimada</span></div><i className="orbit-dot" /></div>
                 <div className="technical-grid" aria-hidden="true" />
+                <div className="priority-image-glow" aria-hidden="true" />
               </article>
 
               <article className="machine-panel">
@@ -309,7 +316,7 @@ export default function Home() {
                   </div>
                 </div>
                 <div className="machine-table" aria-label="Máquinas monitoreadas">
-                  <div className="machine-row table-head"><span>MÁQUINA</span><span>ESTADO</span><span>HORAS</span><span>PRÓXIMO SERVICIO</span><span /></div>
+                  <div className="machine-row table-head"><span>MÁQUINA</span><span>ESTADO</span><span>HORAS</span><span>PRÓXIMO SERVICIO</span><span>CONDICIÓN</span><span /></div>
                   {filteredMachines.map((machine) => {
                     const difference = machine.dueAt - machine.hours;
                     return (
@@ -318,6 +325,7 @@ export default function Home() {
                         <span><Badge className={`status-badge ${statusStyles[machine.status]}`}>{machine.status}</Badge></span>
                         <span className="mono-value">{formatHours(machine.hours)} h</span>
                         <span className={difference < 0 ? 'due-critical' : 'due-value'}>{difference < 0 ? `${Math.abs(difference)} h vencidas` : `en ${difference} h`}</span>
+                        <span className="condition-cell"><strong>{machine.health}%</strong><i aria-hidden="true"><b style={{ width: `${machine.health}%` }} /></i></span>
                         <span className="row-arrow"><ChevronRight /></span>
                       </button>
                     );
