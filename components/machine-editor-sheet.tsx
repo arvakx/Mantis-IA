@@ -135,6 +135,10 @@ export function MachineEditorSheet({
       setError(`Ya existe un activo con el código ${id}.`);
       return;
     }
+    if (form.dataStatus === 'Validado' && (!form.source.trim() || form.performanceStandard.toLowerCase().includes('pendiente'))) {
+      setError('Para marcar el activo como validado necesitas una fuente y un estándar de desempeño específico.');
+      return;
+    }
 
     const status = calculateMachineStatus(hours, dueAt);
     const previousHealth = mode === 'edit' && machine ? machine.health : 88;
@@ -194,6 +198,7 @@ export function MachineEditorSheet({
                 <label className="form-field" htmlFor="asset-context"><span><MapPin /> Contexto operativo</span><Textarea id="asset-context" value={form.operatingContext} onChange={(event) => update('operatingContext', event.target.value)} placeholder="¿Dónde, cuánto y bajo qué condiciones opera?" /></label>
                 <label className="form-field" htmlFor="asset-standard"><span><ShieldCheck /> Estándar de desempeño</span><Textarea id="asset-standard" value={form.performanceStandard} onChange={(event) => update('performanceStandard', event.target.value)} placeholder="¿Qué nivel de desempeño se considera aceptable?" /></label>
               </div>
+              <div className="rcm-scope-note"><AlertTriangle /><p><strong>Esto prepara el contexto RCM, pero no certifica un análisis.</strong> La aplicación completa se comprueba en el caso de mantenimiento: falla funcional, modo, efecto, consecuencia, tarea, fuente y revisión experta.</p></div>
             </section>
 
             <section className="form-section">

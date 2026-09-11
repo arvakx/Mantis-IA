@@ -32,8 +32,11 @@ La versión actual incluye:
 - Filtros y ficha central del activo con función, contexto operativo, condición y plan preventivo.
 - Estado visible de la evidencia: datos demostrativos, borradores y campos aún por validar.
 - Registro y edición de activos con los campos mínimos de identificación, operación, RCM, plan preventivo y fuente.
+- Registro de activos en una superficie completa, legible y adaptable a computador o móvil.
 - Persistencia local de máquinas y lecturas para conservar el trabajo al recargar el navegador.
 - Registro local de lecturas de horas.
+- Casos de mantenimiento guiados por la cadena RCM: función, falla funcional, modo, causa, efecto, consecuencia, política, intervalo y fuente.
+- Puerta de calidad que separa completitud documental, preparación para revisión y validación por un experto identificado.
 - Panel demostrativo del agente Mantis IA.
 - Flujo confirmado para crear una tarea preventiva.
 

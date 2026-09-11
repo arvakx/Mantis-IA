@@ -2,13 +2,14 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import {
-  Activity, AlertTriangle, ArrowUpRight, Bell, Bot, CheckCircle2,
+  Activity, AlertTriangle, ArrowUpRight, Bell, Bot, CheckCircle2, ClipboardCheck,
   ChevronRight, CircleDot, Clock3, FileText, Gauge, History,
   LayoutDashboard, Menu, Pencil, Plus, ScanLine, Search, Send, Settings,
   ShieldCheck, Sparkles, Wrench,
 } from 'lucide-react';
 
 import { MachineEditorSheet } from '@/components/machine-editor-sheet';
+import { MaintenanceCaseWorkspace } from '@/components/maintenance-case-workspace';
 import { MachineProfileSheet } from '@/components/machine-profile-sheet';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -23,6 +24,7 @@ import {
   type Machine,
   type MachineStatus,
 } from '@/lib/machines';
+import type { MaintenanceCase } from '@/lib/maintenance-cases';
 
 type WebMcpContext = {
   registerTool: (
@@ -47,6 +49,7 @@ const navItems = [
 ];
 
 const MACHINES_STORAGE_KEY = 'mantis-ia-assets-v1';
+const CASES_STORAGE_KEY = 'mantis-ia-rcm-cases-v1';
 
 export default function Home() {
   const [machines, setMachines] = useState(initialMachines);
@@ -57,6 +60,9 @@ export default function Home() {
   const [editorOpen, setEditorOpen] = useState(false);
   const [editorMode, setEditorMode] = useState<'create' | 'edit'>('create');
   const [storageReady, setStorageReady] = useState(false);
+  const [maintenanceCases, setMaintenanceCases] = useState<MaintenanceCase[]>([]);
+  const [casesReady, setCasesReady] = useState(false);
+  const [caseWorkspaceOpen, setCaseWorkspaceOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [prompt, setPrompt] = useState('');
   const [assistantReply, setAssistantReply] = useState<string | null>(null);
@@ -92,6 +98,28 @@ export default function Home() {
     if (!storageReady) return;
     window.localStorage.setItem(MACHINES_STORAGE_KEY, JSON.stringify(machines));
   }, [machines, storageReady]);
+
+  useEffect(() => {
+    const casesTimer = window.setTimeout(() => {
+      const saved = window.localStorage.getItem(CASES_STORAGE_KEY);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved) as MaintenanceCase[];
+          if (Array.isArray(parsed)) setMaintenanceCases(parsed);
+        } catch {
+          window.localStorage.removeItem(CASES_STORAGE_KEY);
+        }
+      }
+      setCasesReady(true);
+    }, 0);
+
+    return () => window.clearTimeout(casesTimer);
+  }, []);
+
+  useEffect(() => {
+    if (!casesReady) return;
+    window.localStorage.setItem(CASES_STORAGE_KEY, JSON.stringify(maintenanceCases));
+  }, [casesReady, maintenanceCases]);
 
   useEffect(() => {
     const context = (document as Document & { modelContext?: WebMcpContext }).modelContext;
@@ -179,6 +207,13 @@ export default function Home() {
     window.setTimeout(() => setNotice(null), 2800);
   }
 
+  function saveMaintenanceCase(maintenanceCase: MaintenanceCase) {
+    setMaintenanceCases((current) => [maintenanceCase, ...current]);
+    setCaseWorkspaceOpen(false);
+    setNotice(`${maintenanceCase.id} guardado como ${maintenanceCase.reviewStatus.toLowerCase()}`);
+    window.setTimeout(() => setNotice(null), 3200);
+  }
+
   function askAssistant(event: { preventDefault: () => void }) {
     event.preventDefault();
     if (!prompt.trim()) return;
@@ -198,7 +233,7 @@ export default function Home() {
         <nav className="primary-nav" aria-label="Navegación principal">
           <p className="nav-caption">OPERACIÓN</p>
           {navItems.map(({ label, icon: Icon, active }) => (
-            <button key={label} className={active ? 'nav-item active' : 'nav-item'}>
+            <button key={label} className={active ? 'nav-item active' : 'nav-item'} onClick={() => { if (label === 'Mantenimiento') setCaseWorkspaceOpen(true); }}>
               <Icon aria-hidden="true" />
               <span>{label}</span>
               {label === 'Mantenimiento' && <strong>{overdueCount + warningCount}</strong>}
@@ -238,7 +273,7 @@ export default function Home() {
               <h2>El mantenimiento que necesita tu atención.</h2>
               <p>Datos de demostración preparados para validar el flujo de la plataforma.</p>
             </div>
-            <Button className="assistant-button" onClick={() => setAssistantOpen(true)}><Sparkles data-icon="inline-start" /> Consultar a Mantis IA</Button>
+            <div className="intro-actions"><Button variant="outline" className="case-button" onClick={() => setCaseWorkspaceOpen(true)}><ClipboardCheck data-icon="inline-start" /> Nuevo caso RCM</Button><Button className="assistant-button" onClick={() => setAssistantOpen(true)}><Sparkles data-icon="inline-start" /> Consultar a Mantis IA</Button></div>
           </div>
 
           <section className="metric-grid" aria-label="Resumen operativo">
@@ -297,11 +332,11 @@ export default function Home() {
                 <div className="detail-score"><div className="score-ring" style={{ '--score': `${selected.health}%` } as React.CSSProperties}><span>{selected.health}</span></div><div><p>Índice de condición</p><strong>{selected.health < 70 ? 'Requiere atención' : selected.health < 86 ? 'Condición vigilada' : 'Condición estable'}</strong><span>Calculado con reglas del plan</span></div></div>
                 <div className="detail-stats"><div><span>HORAS ACTUALES</span><strong>{formatHours(selected.hours)} h</strong></div><div><span>INTERVALO</span><strong>{formatHours(selected.dueAt)} h</strong></div><div><span>ÚLTIMO SERVICIO</span><strong>{selected.lastService}</strong></div></div>
                 <div className="next-task"><div className="task-heading"><span>PRÓXIMA TAREA</span><Badge variant="outline">Preventivo</Badge></div><strong>{selected.nextTask}</strong><p>Basado en el plan preventivo registrado para esta máquina.</p><div className="task-progress"><span style={{ width: `${Math.min((selected.hours / selected.dueAt) * 100, 100)}%` }} /></div></div>
-                <div className="detail-actions"><Button onClick={registerReading}><Plus data-icon="inline-start" /> Lectura</Button><Button variant="outline" onClick={() => openEditor('edit')}><Pencil data-icon="inline-start" /> Editar</Button><Button variant="outline" onClick={() => setAssistantOpen(true)}><Bot data-icon="inline-start" /> Mantis IA</Button></div>
+                <div className="detail-actions"><Button onClick={registerReading}><Plus data-icon="inline-start" /> Lectura</Button><Button variant="outline" onClick={() => openEditor('edit')}><Pencil data-icon="inline-start" /> Editar</Button><Button variant="outline" onClick={() => setCaseWorkspaceOpen(true)}><ClipboardCheck data-icon="inline-start" /> Caso RCM</Button></div>
               </article>
               <article className="activity-card">
                 <div className="section-head compact"><div><h3>Actividad reciente</h3><p>Trazabilidad del laboratorio</p></div><button>Ver todo</button></div>
-                <div className="activity-item"><span className="activity-dot success"><CheckCircle2 /></span><div><strong>Inspección completada</strong><p>Bomba centrífuga · hace 2 h</p></div></div>
+                {maintenanceCases[0] ? <div className="activity-item"><span className="activity-dot violet"><ClipboardCheck /></span><div><strong>{maintenanceCases[0].title}</strong><p>{maintenanceCases[0].id} · {maintenanceCases[0].reviewStatus}</p></div></div> : <div className="activity-item"><span className="activity-dot success"><CheckCircle2 /></span><div><strong>Inspección completada</strong><p>Bomba centrífuga · hace 2 h</p></div></div>}
                 <div className="activity-item"><span className="activity-dot warning"><Clock3 /></span><div><strong>Lectura actualizada</strong><p>Torno paralelo · ayer</p></div></div>
               </article>
             </aside>
@@ -310,6 +345,8 @@ export default function Home() {
       </section>
 
       {notice && <div className="notice-toast"><CheckCircle2 /> {notice}</div>}
+
+      {caseWorkspaceOpen && <MaintenanceCaseWorkspace machines={machines} onClose={() => setCaseWorkspaceOpen(false)} onSave={saveMaintenanceCase} />}
 
       <MachineProfileSheet
         machine={selected}
