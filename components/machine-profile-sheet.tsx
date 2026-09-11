@@ -30,24 +30,28 @@ type MachineProfileSheetProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onAskAssistant: () => void;
+  onEdit: () => void;
 };
-
-const evidence = [
-  { label: 'Identificación del activo', detail: 'Estructura lista con datos de demostración', state: 'demo' },
-  { label: 'Plan preventivo', detail: 'Intervalo y tarea aún sin validación técnica', state: 'draft' },
-  { label: 'Manual técnico', detail: 'Pendiente de cargar y referenciar', state: 'pending' },
-  { label: 'Historial real', detail: 'Pendiente de datos del laboratorio', state: 'pending' },
-  { label: 'Análisis RCM', detail: 'Pendiente de funciones y modos de falla validados', state: 'pending' },
-] as const;
 
 export function MachineProfileSheet({
   machine,
   open,
   onOpenChange,
   onAskAssistant,
+  onEdit,
 }: MachineProfileSheetProps) {
   const serviceDelta = machine.dueAt - machine.hours;
   const progress = Math.min((machine.hours / machine.dueAt) * 100, 100);
+  const profileEvidenceState = machine.dataStatus === 'Validado'
+    ? 'ready'
+    : machine.dataStatus === 'Demostrativo' ? 'demo' : 'pending';
+  const evidence = [
+    { label: 'Identificación del activo', detail: `Fuente: ${machine.source}`, state: profileEvidenceState },
+    { label: 'Plan preventivo', detail: 'Intervalo y tarea listos para revisión técnica', state: machine.dataStatus === 'Validado' ? 'ready' : 'draft' },
+    { label: 'Manual técnico', detail: 'Pendiente de cargar y referenciar', state: 'pending' },
+    { label: 'Historial real', detail: 'Pendiente de datos del laboratorio', state: 'pending' },
+    { label: 'Análisis RCM', detail: 'Pendiente de funciones y modos de falla validados', state: 'pending' },
+  ] as const;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -55,7 +59,7 @@ export function MachineProfileSheet({
         <SheetHeader className="asset-sheet-head">
           <div className="asset-sheet-kicker">
             <span>FICHA CENTRAL DEL ACTIVO</span>
-            <Badge className="asset-demo-badge">DATOS DEMOSTRATIVOS</Badge>
+            <Badge className={`asset-demo-badge data-${profileEvidenceState}`}>{machine.dataStatus.toUpperCase()}</Badge>
           </div>
           <div className="asset-sheet-title-row">
             <div className="asset-sheet-icon"><Activity /></div>
@@ -133,11 +137,11 @@ export function MachineProfileSheet({
               {evidence.map((item) => (
                 <div className="evidence-row" key={item.label}>
                   <span className={`evidence-icon ${item.state}`}>
-                    {item.state === 'demo' ? <Database /> : item.state === 'draft' ? <FileClock /> : <Clock3 />}
+                    {item.state === 'ready' ? <CheckCircle2 /> : item.state === 'demo' ? <Database /> : item.state === 'draft' ? <FileClock /> : <Clock3 />}
                   </span>
                   <div><strong>{item.label}</strong><p>{item.detail}</p></div>
                   <span className={`evidence-state ${item.state}`}>
-                    {item.state === 'demo' ? 'DEMO' : item.state === 'draft' ? 'BORRADOR' : 'PENDIENTE'}
+                    {item.state === 'ready' ? 'VALIDADO' : item.state === 'demo' ? 'DEMO' : item.state === 'draft' ? 'BORRADOR' : 'PENDIENTE'}
                   </span>
                 </div>
               ))}
@@ -155,7 +159,7 @@ export function MachineProfileSheet({
 
         <div className="asset-sheet-actions">
           <div><CheckCircle2 /><span>La decisión final siempre queda en manos del técnico.</span></div>
-          <Button onClick={onAskAssistant}><Bot data-icon="inline-start" /> Consultar con Mantis IA <Sparkles data-icon="inline-end" /></Button>
+          <div className="asset-action-buttons"><Button variant="outline" onClick={onEdit}>Editar datos</Button><Button onClick={onAskAssistant}><Bot data-icon="inline-start" /> Consultar con Mantis IA <Sparkles data-icon="inline-end" /></Button></div>
         </div>
       </SheetContent>
     </Sheet>

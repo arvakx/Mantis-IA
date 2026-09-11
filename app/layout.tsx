@@ -1,14 +1,19 @@
 import type { Metadata } from 'next';
-import { DM_Sans, IBM_Plex_Mono, Syne } from 'next/font/google';
+import { IBM_Plex_Mono, Manrope, Space_Grotesk, Urbanist } from 'next/font/google';
 import './globals.css';
 
-const dmSans = DM_Sans({
+const manrope = Manrope({
   variable: '--font-body',
   subsets: ['latin'],
 });
 
-const syne = Syne({
+const spaceGrotesk = Space_Grotesk({
   variable: '--font-display',
+  subsets: ['latin'],
+});
+
+const urbanist = Urbanist({
+  variable: '--font-numbers',
   subsets: ['latin'],
 });
 
@@ -32,7 +37,7 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body
-        className={`${dmSans.variable} ${syne.variable} ${ibmPlexMono.variable} antialiased`}
+        className={`${manrope.variable} ${spaceGrotesk.variable} ${urbanist.variable} ${ibmPlexMono.variable} antialiased`}
       >
         {children}
       </body>

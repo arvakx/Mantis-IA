@@ -1,4 +1,5 @@
 export type MachineStatus = 'Operativa' | 'Atención próxima' | 'Vencida';
+export type DataStatus = 'Demostrativo' | 'Pendiente de validación' | 'Validado';
 
 export type Machine = {
   id: string;
@@ -14,6 +15,8 @@ export type Machine = {
   function: string;
   operatingContext: string;
   performanceStandard: string;
+  dataStatus: DataStatus;
+  source: string;
 };
 
 export const initialMachines: Machine[] = [
@@ -31,6 +34,8 @@ export const initialMachines: Machine[] = [
     function: 'Suministrar aire comprimido a los equipos neumáticos del laboratorio.',
     operatingContext: 'Servicio intermitente en un entorno académico de manufactura.',
     performanceStandard: 'Pendiente de validación con el experto de mantenimiento.',
+    dataStatus: 'Demostrativo',
+    source: 'Escenario construido para probar el prototipo',
   },
   {
     id: 'TAL-02',
@@ -46,6 +51,8 @@ export const initialMachines: Machine[] = [
     function: 'Realizar perforaciones controladas en piezas de práctica del laboratorio.',
     operatingContext: 'Uso académico por jornadas y bajo supervisión docente.',
     performanceStandard: 'Pendiente de validación con el experto de mantenimiento.',
+    dataStatus: 'Demostrativo',
+    source: 'Escenario construido para probar el prototipo',
   },
   {
     id: 'TOR-03',
@@ -61,6 +68,8 @@ export const initialMachines: Machine[] = [
     function: 'Mecanizar piezas cilíndricas para prácticas de manufactura y metrología.',
     operatingContext: 'Operación variable según el tipo de práctica y material procesado.',
     performanceStandard: 'Pendiente de validación con el experto de mantenimiento.',
+    dataStatus: 'Demostrativo',
+    source: 'Escenario construido para probar el prototipo',
   },
   {
     id: 'BOM-01',
@@ -76,6 +85,8 @@ export const initialMachines: Machine[] = [
     function: 'Impulsar fluido a través del banco de pruebas hidráulicas.',
     operatingContext: 'Ensayos académicos de duración corta y caudal controlado.',
     performanceStandard: 'Pendiente de validación con el experto de mantenimiento.',
+    dataStatus: 'Demostrativo',
+    source: 'Escenario construido para probar el prototipo',
   },
   {
     id: 'ESM-01',
@@ -91,6 +102,8 @@ export const initialMachines: Machine[] = [
     function: 'Desbastar y acondicionar piezas y herramientas de práctica.',
     operatingContext: 'Uso manual intermitente con exposición a polvo y partículas.',
     performanceStandard: 'Pendiente de validación con el experto de mantenimiento.',
+    dataStatus: 'Demostrativo',
+    source: 'Escenario construido para probar el prototipo',
   },
 ];
 
@@ -102,4 +115,10 @@ export const statusStyles: Record<MachineStatus, string> = {
 
 export function formatHours(value: number) {
   return new Intl.NumberFormat('es-CO').format(value);
+}
+
+export function calculateMachineStatus(hours: number, dueAt: number): MachineStatus {
+  if (hours >= dueAt) return 'Vencida';
+  if (dueAt - hours <= dueAt * 0.15) return 'Atención próxima';
+  return 'Operativa';
 }

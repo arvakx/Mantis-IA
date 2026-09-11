@@ -4,17 +4,25 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   Activity, AlertTriangle, ArrowUpRight, Bell, Bot, CheckCircle2,
   ChevronRight, CircleDot, Clock3, FileText, Gauge, History,
-  LayoutDashboard, Menu, Plus, ScanLine, Search, Send, Settings,
+  LayoutDashboard, Menu, Pencil, Plus, ScanLine, Search, Send, Settings,
   ShieldCheck, Sparkles, Wrench,
 } from 'lucide-react';
 
+import { MachineEditorSheet } from '@/components/machine-editor-sheet';
 import { MachineProfileSheet } from '@/components/machine-profile-sheet';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle,
 } from '@/components/ui/sheet';
-import { formatHours, initialMachines, statusStyles, type MachineStatus } from '@/lib/machines';
+import {
+  calculateMachineStatus,
+  formatHours,
+  initialMachines,
+  statusStyles,
+  type Machine,
+  type MachineStatus,
+} from '@/lib/machines';
 
 type WebMcpContext = {
   registerTool: (
@@ -38,12 +46,17 @@ const navItems = [
   { label: 'Documentos', icon: FileText },
 ];
 
+const MACHINES_STORAGE_KEY = 'mantis-ia-assets-v1';
+
 export default function Home() {
   const [machines, setMachines] = useState(initialMachines);
   const [selectedId, setSelectedId] = useState('COMP-01');
   const [filter, setFilter] = useState<'Todas' | MachineStatus>('Todas');
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [assetProfileOpen, setAssetProfileOpen] = useState(false);
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [editorMode, setEditorMode] = useState<'create' | 'edit'>('create');
+  const [storageReady, setStorageReady] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [prompt, setPrompt] = useState('');
   const [assistantReply, setAssistantReply] = useState<string | null>(null);
@@ -57,6 +70,28 @@ export default function Home() {
   );
   const overdueCount = machines.filter((machine) => machine.status === 'Vencida').length;
   const warningCount = machines.filter((machine) => machine.status === 'Atención próxima').length;
+
+  useEffect(() => {
+    const storageTimer = window.setTimeout(() => {
+      const saved = window.localStorage.getItem(MACHINES_STORAGE_KEY);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved) as Machine[];
+          if (Array.isArray(parsed) && parsed.length > 0) setMachines(parsed);
+        } catch {
+          window.localStorage.removeItem(MACHINES_STORAGE_KEY);
+        }
+      }
+      setStorageReady(true);
+    }, 0);
+
+    return () => window.clearTimeout(storageTimer);
+  }, []);
+
+  useEffect(() => {
+    if (!storageReady) return;
+    window.localStorage.setItem(MACHINES_STORAGE_KEY, JSON.stringify(machines));
+  }, [machines, storageReady]);
 
   useEffect(() => {
     const context = (document as Document & { modelContext?: WebMcpContext }).modelContext;
@@ -103,7 +138,11 @@ export default function Home() {
         const additionalHours = value.additionalHours;
         const machine = machines.find((item) => item.id === machineId);
         if (!machine) throw new Error('La máquina indicada no existe.');
-        setMachines((current) => current.map((item) => item.id === machineId ? { ...item, hours: item.hours + additionalHours } : item));
+        setMachines((current) => current.map((item) => {
+          if (item.id !== machineId) return item;
+          const hours = item.hours + additionalHours;
+          return { ...item, hours, status: calculateMachineStatus(hours, item.dueAt) };
+        }));
         setSelectedId(machineId);
         setNotice(`Lectura registrada: +${additionalHours} h en ${machineId}`);
         window.setTimeout(() => setNotice(null), 2600);
@@ -115,9 +154,29 @@ export default function Home() {
   }, [machines]);
 
   function registerReading() {
-    setMachines((current) => current.map((machine) => machine.id === selected.id ? { ...machine, hours: machine.hours + 8 } : machine));
+    setMachines((current) => current.map((machine) => {
+      if (machine.id !== selected.id) return machine;
+      const hours = machine.hours + 8;
+      return { ...machine, hours, status: calculateMachineStatus(hours, machine.dueAt) };
+    }));
     setNotice(`Lectura registrada: +8 h en ${selected.id}`);
     window.setTimeout(() => setNotice(null), 2600);
+  }
+
+  function openEditor(mode: 'create' | 'edit') {
+    setEditorMode(mode);
+    setAssetProfileOpen(false);
+    setEditorOpen(true);
+  }
+
+  function saveMachine(machine: Machine) {
+    setMachines((current) => editorMode === 'create'
+      ? [...current, machine]
+      : current.map((item) => item.id === selected.id ? machine : item));
+    setSelectedId(machine.id);
+    setEditorOpen(false);
+    setNotice(editorMode === 'create' ? `${machine.id} se registró correctamente` : `Cambios guardados en ${machine.id}`);
+    window.setTimeout(() => setNotice(null), 2800);
   }
 
   function askAssistant(event: { preventDefault: () => void }) {
@@ -167,7 +226,7 @@ export default function Home() {
           <div className="top-actions">
             <div className="search-shell"><Search aria-hidden="true" /><input aria-label="Buscar máquinas" placeholder="Buscar máquina..." /><kbd>⌘ K</kbd></div>
             <Button variant="ghost" size="icon" className="icon-button" aria-label="Notificaciones"><Bell /><span className="notification-dot" /></Button>
-            <Button className="primary-action" onClick={registerReading}><Plus data-icon="inline-start" /> Registrar lectura</Button>
+            <Button className="primary-action" onClick={() => openEditor('create')}><Plus data-icon="inline-start" /> Registrar activo</Button>
             <div className="profile-chip" aria-label="Sesión de demostración"><span>GC</span><div><strong>Gabo</strong><small>Modo demostración</small></div></div>
           </div>
         </header>
@@ -238,7 +297,7 @@ export default function Home() {
                 <div className="detail-score"><div className="score-ring" style={{ '--score': `${selected.health}%` } as React.CSSProperties}><span>{selected.health}</span></div><div><p>Índice de condición</p><strong>{selected.health < 70 ? 'Requiere atención' : selected.health < 86 ? 'Condición vigilada' : 'Condición estable'}</strong><span>Calculado con reglas del plan</span></div></div>
                 <div className="detail-stats"><div><span>HORAS ACTUALES</span><strong>{formatHours(selected.hours)} h</strong></div><div><span>INTERVALO</span><strong>{formatHours(selected.dueAt)} h</strong></div><div><span>ÚLTIMO SERVICIO</span><strong>{selected.lastService}</strong></div></div>
                 <div className="next-task"><div className="task-heading"><span>PRÓXIMA TAREA</span><Badge variant="outline">Preventivo</Badge></div><strong>{selected.nextTask}</strong><p>Basado en el plan preventivo registrado para esta máquina.</p><div className="task-progress"><span style={{ width: `${Math.min((selected.hours / selected.dueAt) * 100, 100)}%` }} /></div></div>
-                <div className="detail-actions"><Button onClick={registerReading}><Plus data-icon="inline-start" /> Añadir lectura</Button><Button variant="outline" onClick={() => setAssistantOpen(true)}><Bot data-icon="inline-start" /> Preguntar a IA</Button></div>
+                <div className="detail-actions"><Button onClick={registerReading}><Plus data-icon="inline-start" /> Lectura</Button><Button variant="outline" onClick={() => openEditor('edit')}><Pencil data-icon="inline-start" /> Editar</Button><Button variant="outline" onClick={() => setAssistantOpen(true)}><Bot data-icon="inline-start" /> Mantis IA</Button></div>
               </article>
               <article className="activity-card">
                 <div className="section-head compact"><div><h3>Actividad reciente</h3><p>Trazabilidad del laboratorio</p></div><button>Ver todo</button></div>
@@ -260,7 +319,19 @@ export default function Home() {
           setAssetProfileOpen(false);
           setAssistantOpen(true);
         }}
+        onEdit={() => openEditor('edit')}
       />
+
+      {editorOpen && (
+        <MachineEditorSheet
+          open
+          mode={editorMode}
+          machine={editorMode === 'edit' ? selected : undefined}
+          existingIds={machines.map((machine) => machine.id)}
+          onOpenChange={setEditorOpen}
+          onSave={saveMachine}
+        />
+      )}
 
       <Sheet open={assistantOpen} onOpenChange={setAssistantOpen}>
         <SheetContent className="assistant-sheet sm:max-w-[520px]" showCloseButton>
