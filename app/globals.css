@@ -1170,3 +1170,48 @@ button.machine-row.selected { box-shadow: inset 4px 0 #7657ff; }
   .hero-scanline,.live-insight > i { animation: none; }
   .metric-card { transition: none; }
 }
+
+/* Dedicated asset inventory and experimental validation states */
+.section-head-action { height: 38px; gap: 5px; padding-inline: 13px; color: #5539d8; border: 1px solid #d9d2fa; background: #f3f0ff; font-size: 12px; font-weight: 800; }
+.section-head-action:hover { color: #34209d; background: #e9e3ff; }
+.section-head-action svg { width: 15px; }
+.inventory-content { padding-top: 24px; }
+.inventory-intro { display: grid; grid-template-columns: minmax(0,1fr) minmax(420px,.8fr); align-items: center; gap: 24px; margin-bottom: 18px; padding: 24px 27px; color: #fff; border: 1px solid #263c72; border-radius: 18px; background: radial-gradient(circle at 88% 30%,rgba(31,225,194,.22),transparent 18rem),linear-gradient(112deg,#07142d,#142b62 70%,#11485b); box-shadow: 0 18px 42px rgba(15,25,62,.16); }
+.inventory-heading [data-slot='badge'] { gap: 6px; height: 27px; color: #d9fff7; border: 1px solid rgba(69,226,199,.4); background: rgba(10,134,112,.48); font: 800 10px var(--font-tech); letter-spacing: .05em; }
+.inventory-heading [data-slot='badge'] svg { width: 14px; }
+.inventory-heading h2 { margin: 9px 0 4px; color: #fff; font: 760 34px/1 var(--font-display); letter-spacing: -.035em; }
+.inventory-heading p { max-width: 660px; margin: 0; color: #b8c7df; font-size: 14px; line-height: 1.5; }
+.validation-legend { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 13px; padding: 15px; border: 1px solid rgba(95,232,210,.32); border-radius: 14px; background: rgba(13,35,70,.58); backdrop-filter: blur(12px); }
+.validation-legend-icon { display: grid; place-items: center; width: 45px; height: 45px; color: #082838; border-radius: 13px; background: linear-gradient(145deg,#caff4d,#46ebc2); }
+.validation-legend-icon svg { width: 21px; }
+.validation-legend strong,.validation-legend span { display: block; }
+.validation-legend strong { color: #fff; font-size: 14px; }
+.validation-legend span { margin-top: 5px; color: #b9c9dc; font-size: 12px; line-height: 1.5; }
+.validation-legend span b { color: #eafff9; font-weight: 800; }
+.inventory-layout { display: grid; grid-template-columns: minmax(0,1.7fr) minmax(330px,.64fr); align-items: start; gap: 15px; }
+.inventory-panel { min-width: 0; }
+.inventory-section-head { min-height: 72px; }
+.inventory-controls { display: flex; align-items: center; gap: 10px; }
+.inventory-register { height: 38px; border-radius: 10px; background: linear-gradient(105deg,#6545f6,#8c4dff); box-shadow: 0 9px 20px rgba(103,70,247,.18); font-size: 12px; }
+.machine-empty { display: grid; place-items: center; min-height: 260px; padding: 40px; text-align: center; }
+.machine-empty svg { width: 34px; height: 34px; margin-bottom: 10px; color: #7255f2; }
+.machine-empty strong { color: #202b45; font-size: 17px; }
+.machine-empty span { margin-top: 5px; color: #748096; font-size: 14px; }
+.form-field.validation-required > span { flex-wrap: wrap; }
+.form-field.validation-required > span em { margin-left: auto; padding: 4px 7px; color: #6a4b00; border: 1px solid #efd58d; border-radius: 99px; background: #fff4c9; font: 800 9px var(--font-tech); font-style: normal; letter-spacing: .035em; }
+.form-field > small,.validation-select-help { color: #727d93; font-size: 12px; line-height: 1.45; }
+.form-field.validation-required [data-slot='textarea']:placeholder-shown,.form-field.validation-required [data-slot='input']:placeholder-shown { border-style: dashed; border-color: #e0bf60; background: #fffdf4; }
+.asset-standard .pending-value,.function-snapshot .snapshot-pending { color: #87640b; font-style: italic; font-weight: 650; }
+
+@media (max-width:1200px) {
+  .inventory-intro { grid-template-columns: 1fr; }
+  .inventory-layout { grid-template-columns: 1fr; }
+  .inventory-layout > .detail-column { display: grid; grid-template-columns: 1.2fr .8fr; }
+}
+@media (max-width:760px) {
+  .inventory-intro { padding: 21px; }
+  .inventory-controls { align-items: stretch; flex-direction: column; width: 100%; }
+  .inventory-register { width: 100%; }
+  .inventory-layout > .detail-column { display: flex; }
+  .form-field.validation-required > span em { width: fit-content; margin-left: 0; }
+}

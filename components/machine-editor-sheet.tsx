@@ -74,7 +74,7 @@ const blankForm: FormState = {
   nextTask: '',
   function: '',
   operatingContext: '',
-  performanceStandard: 'Pendiente de validación con el experto de mantenimiento.',
+  performanceStandard: '',
   dataStatus: 'Pendiente de validación',
   source: '',
 };
@@ -135,8 +135,8 @@ export function MachineEditorSheet({
       setError(`Ya existe un activo con el código ${id}.`);
       return;
     }
-    if (form.dataStatus === 'Validado' && (!form.source.trim() || form.performanceStandard.toLowerCase().includes('pendiente'))) {
-      setError('Para marcar el activo como validado necesitas una fuente y un estándar de desempeño específico.');
+    if (form.dataStatus === 'Validado' && (!form.source.trim() || !form.performanceStandard.trim())) {
+      setError('Para marcar el activo como validado necesitas una fuente verificable y un estándar de desempeño confirmado durante el experimento o por el experto.');
       return;
     }
 
@@ -156,7 +156,7 @@ export function MachineEditorSheet({
       nextTask: form.nextTask.trim(),
       function: form.function.trim(),
       operatingContext: form.operatingContext.trim(),
-      performanceStandard: form.performanceStandard.trim() || 'Pendiente de validación con el experto de mantenimiento.',
+      performanceStandard: form.performanceStandard.trim(),
       dataStatus: form.dataStatus,
       source: form.source.trim() || 'Sin fuente documentada',
     });
@@ -196,7 +196,7 @@ export function MachineEditorSheet({
               <div className="form-grid">
                 <label className="form-field form-span-two" htmlFor="asset-function"><span><ClipboardCheck /> Función del activo</span><Textarea id="asset-function" value={form.function} onChange={(event) => update('function', event.target.value)} placeholder="¿Qué debe hacer esta máquina?" /></label>
                 <label className="form-field" htmlFor="asset-context"><span><MapPin /> Contexto operativo</span><Textarea id="asset-context" value={form.operatingContext} onChange={(event) => update('operatingContext', event.target.value)} placeholder="¿Dónde, cuánto y bajo qué condiciones opera?" /></label>
-                <label className="form-field" htmlFor="asset-standard"><span><ShieldCheck /> Estándar de desempeño</span><Textarea id="asset-standard" value={form.performanceStandard} onChange={(event) => update('performanceStandard', event.target.value)} placeholder="¿Qué nivel de desempeño se considera aceptable?" /></label>
+                <label className="form-field validation-required" htmlFor="asset-standard"><span><ShieldCheck /> Estándar de desempeño <em>VALIDAR EN EL EXPERIMENTO</em></span><Textarea id="asset-standard" value={form.performanceStandard} onChange={(event) => update('performanceStandard', event.target.value)} placeholder="Ej. Operar sin vibraciones anormales y conservar la precisión definida por el fabricante." /><small>No se completa automáticamente: debe contrastarse con mediciones, manuales o revisión del profesor.</small></label>
               </div>
               <div className="rcm-scope-note"><AlertTriangle /><p><strong>Esto prepara el contexto RCM, pero no certifica un análisis.</strong> La aplicación completa se comprueba en el caso de mantenimiento: falla funcional, modo, efecto, consecuencia, tarea, fuente y revisión experta.</p></div>
             </section>
@@ -206,8 +206,8 @@ export function MachineEditorSheet({
               <div className="form-grid">
                 <label className="form-field form-span-two" htmlFor="asset-task"><span><Wrench /> Próxima tarea preventiva</span><Input id="asset-task" value={form.nextTask} onChange={(event) => update('nextTask', event.target.value)} placeholder="Ej. Revisar lubricación y alineación" /></label>
                 <label className="form-field" htmlFor="asset-last-service"><span><ClipboardCheck /> Último servicio</span><Input id="asset-last-service" value={form.lastService} onChange={(event) => update('lastService', event.target.value)} placeholder="Ej. 09 sep 2026" /></label>
-                <label className="form-field" htmlFor="asset-source"><span><Database /> Fuente del dato</span><Input id="asset-source" value={form.source} onChange={(event) => update('source', event.target.value)} placeholder="Manual, profesor, historial..." /></label>
-                <label className="form-field" htmlFor="asset-validation"><span><CheckCircle2 /> Estado de validación</span><NativeSelect id="asset-validation" className="form-native-select" value={form.dataStatus} onChange={(event) => update('dataStatus', event.target.value as DataStatus)}><NativeSelectOption value="Demostrativo">Demostrativo</NativeSelectOption><NativeSelectOption value="Pendiente de validación">Pendiente de validación</NativeSelectOption><NativeSelectOption value="Validado">Validado</NativeSelectOption></NativeSelect></label>
+                <label className="form-field validation-required" htmlFor="asset-source"><span><Database /> Fuente del dato <em>OBLIGATORIA AL VALIDAR</em></span><Input id="asset-source" value={form.source} onChange={(event) => update('source', event.target.value)} placeholder="Manual técnico, medición, historial o revisión del profesor" /><small>Identifica de dónde salió la información para que pueda comprobarse.</small></label>
+                <label className="form-field" htmlFor="asset-validation"><span><CheckCircle2 /> Estado de validación de los datos</span><NativeSelect id="asset-validation" className="form-native-select" value={form.dataStatus} onChange={(event) => update('dataStatus', event.target.value as DataStatus)}><NativeSelectOption value="Demostrativo">Demostrativo · solo prueba</NativeSelectOption><NativeSelectOption value="Pendiente de validación">Pendiente · requiere validación experimental</NativeSelectOption><NativeSelectOption value="Validado">Validado · fuente y revisión confirmadas</NativeSelectOption></NativeSelect><small className="validation-select-help">“Vencida” pertenece al estado de mantenimiento, no a la validez de los datos.</small></label>
               </div>
             </section>
 

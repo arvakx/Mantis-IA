@@ -184,7 +184,7 @@ export function MaintenanceCaseWorkspace({ machines, onClose, onSave }: Maintena
               <label className="form-field" htmlFor="case-title"><span><ClipboardCheck /> Nombre del caso</span><Input id="case-title" value={form.title} onChange={(event) => update('title', event.target.value)} placeholder="Ej. Pérdida de presión durante la práctica" /></label>
               <label className="form-field case-full" htmlFor="case-observation"><span><BookOpenCheck /> Observación inicial</span><Textarea id="case-observation" value={form.observation} onChange={(event) => update('observation', event.target.value)} placeholder="¿Qué vio, escuchó o midió el operador? Escribe hechos, no conclusiones." /></label>
             </div>
-            <div className="function-snapshot"><div><span>FUNCIÓN REGISTRADA</span><strong>{machine?.function}</strong></div><div><span>DESEMPEÑO ESPERADO</span><strong>{machine?.performanceStandard}</strong></div><Badge>{machine?.dataStatus}</Badge></div>
+            <div className="function-snapshot"><div><span>FUNCIÓN REGISTRADA</span><strong>{machine?.function}</strong></div><div><span>DESEMPEÑO ESPERADO</span><strong className={!machine?.performanceStandard ? 'snapshot-pending' : undefined}>{machine?.performanceStandard || 'Sin validar en el experimento'}</strong></div><Badge>{machine?.dataStatus}</Badge></div>
           </section>
 
           <section className="case-section">

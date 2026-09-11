@@ -107,8 +107,8 @@ export function MachineProfileSheet({
             </div>
             <div className="asset-standard">
               <ShieldCheck />
-              <div><span>ESTÁNDAR DE DESEMPEÑO</span><strong>{machine.performanceStandard}</strong></div>
-              <Badge variant="outline">POR DEFINIR</Badge>
+              <div><span>ESTÁNDAR DE DESEMPEÑO</span><strong className={!machine.performanceStandard ? 'pending-value' : undefined}>{machine.performanceStandard || 'Sin dato registrado'}</strong></div>
+              <Badge variant="outline">{machine.performanceStandard && machine.dataStatus === 'Validado' ? 'VALIDADO' : 'VALIDAR EN EXPERIMENTO'}</Badge>
             </div>
           </section>
 

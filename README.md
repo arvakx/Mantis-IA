@@ -27,11 +27,13 @@ Primera superficie funcional en desarrollo para la XIV Feria de Ciencia, Tecnolo
 La versión actual incluye:
 
 - Entrada directa al prototipo para evitar que el acceso distraiga las pruebas científicas.
-- Tablero operativo responsivo con lenguaje visual de cabina industrial, métricas gráficas y jerarquía por condición.
+- Tablero operativo responsivo con lenguaje visual de cabina industrial, métricas gráficas y un resumen de tres prioridades.
+- Vista independiente de Máquinas con inventario completo, búsqueda, filtros, selección y acceso al registro de activos.
 - Escena industrial original para contextualizar el laboratorio sin representar una máquina real de la USTA.
 - Cinco máquinas de demostración con estados y prioridades.
 - Filtros y ficha central del activo con función, contexto operativo, condición y plan preventivo.
-- Estado visible de la evidencia: datos demostrativos, borradores y campos aún por validar.
+- Estado visible de la evidencia: datos demostrativos, borradores y campos aún por validar durante el experimento o mediante revisión experta.
+- Campos científicos sin respuestas precargadas: los estándares pendientes permanecen vacíos y claramente señalados hasta su validación.
 - Registro y edición de activos con los campos mínimos de identificación, operación, RCM, plan preventivo y fuente.
 - Registro de activos en una superficie completa, legible y adaptable a computador o móvil.
 - Persistencia local de máquinas y lecturas para conservar el trabajo al recargar el navegador.
