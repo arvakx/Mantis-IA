@@ -292,13 +292,18 @@ export default function Home() {
     });
   }
 
+  const selectedNextServiceAt = getNextServiceAt(selected);
+  const selectedServiceDelta = selectedNextServiceAt - selected.hours;
+  const selectedServiceIsDue = selectedServiceDelta <= 0;
+
   const machineDetailColumn = (
     <aside className="detail-column">
-      <article className="machine-detail">
+      <article className={`machine-detail ${selectedServiceIsDue ? 'machine-detail-overdue' : ''}`}>
         <div className="detail-head"><div className="asset-code"><ScanLine /></div><div><p>{selected.id}</p><h3>{selected.name}</h3><span>{selected.type}</span></div><button aria-label="Abrir ficha completa" onClick={() => setAssetProfileOpen(true)}><ArrowUpRight /></button></div>
         <div className="detail-score"><div className="score-ring" style={{ '--score': `${selected.health}%` } as React.CSSProperties}><span>{selected.health}</span></div><div><p>Índice de condición</p><strong>{selected.health < 70 ? 'Requiere atención' : selected.health < 86 ? 'Condición vigilada' : 'Condición estable'}</strong><span>Calculado con reglas del plan</span></div></div>
-        <div className="detail-stats detail-stats-four"><div><span>HORAS ACTUALES</span><strong>{formatHours(selected.hours)} h</strong></div><div><span>ÚLTIMO SERVICIO</span><strong>{formatHours(selected.lastServiceHours)} h</strong></div><div><span>INTERVALO</span><strong>{formatHours(selected.maintenanceInterval)} h</strong></div><div><span>PRÓXIMO SERVICIO</span><strong>{formatHours(getNextServiceAt(selected))} h</strong></div></div>
-        <div className="next-task"><div className="task-heading"><span>PRÓXIMA TAREA</span><Badge variant="outline">Preventivo</Badge></div><strong>{selected.nextTask}</strong><p>Último servicio: {selected.lastService}. Próximo vencimiento calculado automáticamente.</p><div className="task-progress"><span style={{ width: `${getServiceProgress(selected)}%` }} /></div></div>
+        <div className={`service-state-banner ${selectedServiceIsDue ? 'overdue' : 'upcoming'}`}>{selectedServiceIsDue ? <AlertTriangle /> : <Clock3 />}<div><span>{selectedServiceDelta < 0 ? 'MANTENIMIENTO VENCIDO' : selectedServiceDelta === 0 ? 'MANTENIMIENTO REQUERIDO' : 'SERVICIO PROGRAMADO'}</span><strong>{selectedServiceDelta < 0 ? `${formatHours(Math.abs(selectedServiceDelta))} h vencidas` : selectedServiceDelta === 0 ? 'Debe realizarse ahora' : `${formatHours(selectedServiceDelta)} h restantes`}</strong><small>{selectedServiceIsDue ? `Venció a las ${formatHours(selectedNextServiceAt)} h` : `Programado a las ${formatHours(selectedNextServiceAt)} h`}</small></div></div>
+        <div className="detail-stats detail-stats-four"><div><span>HORAS ACTUALES</span><strong>{formatHours(selected.hours)} h</strong></div><div><span>ÚLTIMO SERVICIO</span><strong>{formatHours(selected.lastServiceHours)} h</strong></div><div><span>INTERVALO</span><strong>{formatHours(selected.maintenanceInterval)} h</strong></div><div className={selectedServiceIsDue ? 'service-deadline-expired' : ''}><span>{selectedServiceIsDue ? 'VENCIÓ A LAS' : 'PRÓXIMO SERVICIO'}</span><strong>{formatHours(selectedNextServiceAt)} h</strong></div></div>
+        <div className="next-task"><div className="task-heading"><span>{selectedServiceIsDue ? 'TAREA PENDIENTE' : 'PRÓXIMA TAREA'}</span><Badge variant="outline">Preventivo</Badge></div><strong>{selected.nextTask}</strong><p>{selectedServiceDelta < 0 ? `Debió ejecutarse a las ${formatHours(selectedNextServiceAt)} h y acumula ${formatHours(Math.abs(selectedServiceDelta))} h de retraso.` : selectedServiceDelta === 0 ? `Debe ejecutarse ahora, al alcanzar las ${formatHours(selectedNextServiceAt)} h.` : `Programada para las ${formatHours(selectedNextServiceAt)} h. Último servicio: ${selected.lastService}.`}</p><div className="task-progress"><span style={{ width: `${getServiceProgress(selected)}%` }} /></div></div>
         <div className="detail-actions"><Button onClick={registerReading}><Plus data-icon="inline-start" /> Lectura</Button><Button variant="outline" onClick={() => openEditor('edit')}><Pencil data-icon="inline-start" /> Editar</Button><Button variant="outline" onClick={() => setCaseWorkspaceOpen(true)}><ClipboardCheck data-icon="inline-start" /> Caso RCM</Button></div>
       </article>
       <article className="activity-card">

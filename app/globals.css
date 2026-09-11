@@ -1256,3 +1256,19 @@ button.machine-row.selected { box-shadow: inset 4px 0 #7657ff; }
   .asset-facts-grid article:nth-child(2n) { border-right: 0; }
   .asset-facts-grid article:nth-child(-n+4) { border-bottom: 1px solid #e8e4f0; }
 }
+
+/* Service deadline communication */
+.service-state-banner { display: flex; align-items: center; gap: 11px; margin: 14px 0 10px; padding: 12px 13px; border: 1px solid; border-radius: 12px; }
+.service-state-banner > svg { width: 21px; height: 21px; flex: 0 0 auto; }
+.service-state-banner span,.service-state-banner strong,.service-state-banner small { display: block; }
+.service-state-banner span { font: 800 9px var(--font-tech); letter-spacing: .06em; }
+.service-state-banner strong { margin-top: 2px; font: 780 15px var(--font-numbers); }
+.service-state-banner small { margin-top: 2px; font-size: 11px; }
+.service-state-banner.overdue { color: #b42342; border-color: #f0b6c3; background: linear-gradient(110deg,#fff5f7,#ffe8ed); }
+.service-state-banner.overdue small { color: #9b5262; }
+.service-state-banner.upcoming { color: #0b776d; border-color: #a9e3da; background: linear-gradient(110deg,#f2fffc,#e5faf6); }
+.service-state-banner.upcoming small { color: #547c76; }
+.machine-detail-overdue { border-color: #efc0ca; box-shadow: 0 18px 44px rgba(163,42,67,.08); }
+.detail-stats .service-deadline-expired { background: #fff0f3; }
+.detail-stats .service-deadline-expired span,.detail-stats .service-deadline-expired strong { color: #c72f50; }
+.machine-detail-overdue .task-progress span { background: linear-gradient(90deg,#ffb64d,#ff496c); }

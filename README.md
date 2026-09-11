@@ -37,6 +37,7 @@ La versión actual incluye:
 - Registro y edición de activos con los campos mínimos de identificación, operación, RCM, plan preventivo y fuente.
 - Modelo de contador trazable: horas actuales, horas del último servicio, intervalo preventivo y próximo servicio calculado automáticamente.
 - Estados operativos calculados con el intervalo real y un umbral de atención del 15% antes del próximo servicio.
+- Ficha contextual que distingue visualmente entre horas restantes y mantenimiento vencido, mostrando el punto de servicio y el retraso exacto.
 - Registro de activos en una superficie completa, legible y adaptable a computador o móvil.
 - Persistencia local de máquinas y lecturas para conservar el trabajo al recargar el navegador.
 - Registro local de lecturas de horas.
