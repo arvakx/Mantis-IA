@@ -5,30 +5,16 @@ import {
   Activity, AlertTriangle, ArrowUpRight, Bell, Bot, CheckCircle2,
   ChevronRight, CircleDot, Clock3, FileText, Gauge, History,
   LayoutDashboard, Menu, Plus, ScanLine, Search, Send, Settings,
-  ShieldCheck, Sparkles, Wrench, LogOut,
+  ShieldCheck, Sparkles, Wrench,
 } from 'lucide-react';
 
+import { MachineProfileSheet } from '@/components/machine-profile-sheet';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { LoginScreen, SESSION_KEY } from '@/components/login-screen';
 import {
   Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle,
 } from '@/components/ui/sheet';
-
-type MachineStatus = 'Operativa' | 'Atención próxima' | 'Vencida';
-
-type Machine = {
-  id: string;
-  name: string;
-  type: string;
-  location: string;
-  hours: number;
-  dueAt: number;
-  health: number;
-  status: MachineStatus;
-  lastService: string;
-  nextTask: string;
-};
+import { formatHours, initialMachines, statusStyles, type MachineStatus } from '@/lib/machines';
 
 type WebMcpContext = {
   registerTool: (
@@ -44,14 +30,6 @@ type WebMcpContext = {
   ) => void | Promise<void>;
 };
 
-const initialMachines: Machine[] = [
-  { id: 'COMP-01', name: 'Compresor principal', type: 'Compresor de tornillo', location: 'Zona neumática', hours: 2547, dueAt: 2500, health: 62, status: 'Vencida', lastService: '14 jun 2026', nextTask: 'Cambio de aceite y revisión de filtro' },
-  { id: 'TAL-02', name: 'Taladro de banco', type: 'Taladro de columna', location: 'Banco 02', hours: 1035, dueAt: 1100, health: 79, status: 'Atención próxima', lastService: '02 ago 2026', nextTask: 'Inspección de correa y portabrocas' },
-  { id: 'TOR-03', name: 'Torno paralelo', type: 'Máquina herramienta', location: 'Celda de mecanizado', hours: 1870, dueAt: 2000, health: 84, status: 'Atención próxima', lastService: '26 jul 2026', nextTask: 'Lubricación y control de alineación' },
-  { id: 'BOM-01', name: 'Bomba centrífuga', type: 'Equipo hidráulico', location: 'Banco hidráulico', hours: 724, dueAt: 1000, health: 94, status: 'Operativa', lastService: '18 ago 2026', nextTask: 'Revisión de sello y rodamientos' },
-  { id: 'ESM-01', name: 'Esmeriladora', type: 'Equipo rotativo', location: 'Banco 04', hours: 390, dueAt: 500, health: 91, status: 'Operativa', lastService: '11 ago 2026', nextTask: 'Inspección de guarda y muela' },
-];
-
 const navItems = [
   { label: 'Vista general', icon: LayoutDashboard, active: true },
   { label: 'Máquinas', icon: Gauge },
@@ -60,24 +38,12 @@ const navItems = [
   { label: 'Documentos', icon: FileText },
 ];
 
-const statusStyles: Record<MachineStatus, string> = {
-  Operativa: 'status-ok',
-  'Atención próxima': 'status-warning',
-  Vencida: 'status-critical',
-};
-
-function formatHours(value: number) {
-  return new Intl.NumberFormat('es-CO').format(value);
-}
-
 export default function Home() {
-  const [sessionChecked, setSessionChecked] = useState(false);
-  const [authenticated, setAuthenticated] = useState(false);
-  const [userName, setUserName] = useState('Gabo');
   const [machines, setMachines] = useState(initialMachines);
   const [selectedId, setSelectedId] = useState('COMP-01');
   const [filter, setFilter] = useState<'Todas' | MachineStatus>('Todas');
   const [assistantOpen, setAssistantOpen] = useState(false);
+  const [assetProfileOpen, setAssetProfileOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [prompt, setPrompt] = useState('');
   const [assistantReply, setAssistantReply] = useState<string | null>(null);
@@ -93,25 +59,6 @@ export default function Home() {
   const warningCount = machines.filter((machine) => machine.status === 'Atención próxima').length;
 
   useEffect(() => {
-    const sessionTimer = window.setTimeout(() => {
-      const savedSession = window.localStorage.getItem(SESSION_KEY);
-      if (savedSession) {
-        try {
-          const session = JSON.parse(savedSession) as { name?: string };
-          setUserName(session.name?.trim() || 'Gabo');
-          setAuthenticated(true);
-        } catch {
-          window.localStorage.removeItem(SESSION_KEY);
-        }
-      }
-      setSessionChecked(true);
-    }, 0);
-
-    return () => window.clearTimeout(sessionTimer);
-  }, []);
-
-  useEffect(() => {
-    if (!authenticated) return;
     const context = (document as Document & { modelContext?: WebMcpContext }).modelContext;
     if (!context?.registerTool) return;
     const lifecycle = new AbortController();
@@ -165,19 +112,7 @@ export default function Home() {
     }, { signal: lifecycle.signal })).catch(reportError);
 
     return () => lifecycle.abort();
-  }, [authenticated, machines]);
-
-  function handleAuthenticated(name: string) {
-    setUserName(name);
-    setAuthenticated(true);
-  }
-
-  function logOut() {
-    window.localStorage.removeItem(SESSION_KEY);
-    setAuthenticated(false);
-    setAssistantOpen(false);
-    setMobileNavOpen(false);
-  }
+  }, [machines]);
 
   function registerReading() {
     setMachines((current) => current.map((machine) => machine.id === selected.id ? { ...machine, hours: machine.hours + 8 } : machine));
@@ -192,11 +127,6 @@ export default function Home() {
     setAssistantReply(`${selected.name} superó su intervalo preventivo en ${Math.max(selected.hours - selected.dueAt, 0)} h. Recomiendo revisar primero el nivel de aceite, el filtro y el registro de temperatura antes de autorizar una nueva jornada.`);
     setPrompt('');
   }
-
-  if (!sessionChecked) return <main className="session-loader" aria-label="Cargando Mantis IA"><div className="loader-mark">M</div></main>;
-  if (!authenticated) return <LoginScreen onAuthenticated={handleAuthenticated} />;
-
-  const initials = userName.split(/\s+/).map((part) => part[0]).join('').slice(0, 2).toUpperCase();
 
   return (
     <main className="mantis-shell">
@@ -238,14 +168,14 @@ export default function Home() {
             <div className="search-shell"><Search aria-hidden="true" /><input aria-label="Buscar máquinas" placeholder="Buscar máquina..." /><kbd>⌘ K</kbd></div>
             <Button variant="ghost" size="icon" className="icon-button" aria-label="Notificaciones"><Bell /><span className="notification-dot" /></Button>
             <Button className="primary-action" onClick={registerReading}><Plus data-icon="inline-start" /> Registrar lectura</Button>
-            <button className="profile-chip" aria-label={`Cerrar sesión de ${userName}`} onClick={logOut}><span>{initials}</span><div><strong>{userName}</strong><small>Administrador</small></div><LogOut className="logout-icon" aria-hidden="true" /></button>
+            <div className="profile-chip" aria-label="Sesión de demostración"><span>GC</span><div><strong>Gabo</strong><small>Modo demostración</small></div></div>
           </div>
         </header>
 
         <div className="content-wrap">
           <div className="page-intro">
             <div>
-              <p className="eyebrow"><CircleDot aria-hidden="true" /> MARTES, 8 DE SEPTIEMBRE</p>
+              <p className="eyebrow"><CircleDot aria-hidden="true" /> JUEVES, 10 DE SEPTIEMBRE</p>
               <h2>El mantenimiento que necesita tu atención.</h2>
               <p>Datos de demostración preparados para validar el flujo de la plataforma.</p>
             </div>
@@ -268,7 +198,7 @@ export default function Home() {
                   <div className="priority-reason"><AlertTriangle aria-hidden="true" /><div><strong>Mantenimiento vencido por {machines[0].hours - machines[0].dueAt} horas</strong><span>{machines[0].nextTask}</span></div></div>
                   <div className="priority-actions">
                     <Button className="light-action" onClick={() => { setSelectedId('COMP-01'); setAssistantOpen(true); }}>Analizar con IA <Sparkles data-icon="inline-end" /></Button>
-                    <Button variant="ghost" className="transparent-action" onClick={() => setSelectedId('COMP-01')}>Ver ficha <ChevronRight data-icon="inline-end" /></Button>
+                    <Button variant="ghost" className="transparent-action" onClick={() => { setSelectedId('COMP-01'); setAssetProfileOpen(true); }}>Ver ficha <ChevronRight data-icon="inline-end" /></Button>
                   </div>
                 </div>
                 <div className="health-orbit" style={{ '--health': '62%' } as React.CSSProperties}><div><strong>62</strong><span>Salud estimada</span></div><i className="orbit-dot" /></div>
@@ -304,7 +234,7 @@ export default function Home() {
 
             <aside className="detail-column">
               <article className="machine-detail">
-                <div className="detail-head"><div className="asset-code"><ScanLine /></div><div><p>{selected.id}</p><h3>{selected.name}</h3><span>{selected.type}</span></div><button aria-label="Abrir ficha completa"><ArrowUpRight /></button></div>
+                <div className="detail-head"><div className="asset-code"><ScanLine /></div><div><p>{selected.id}</p><h3>{selected.name}</h3><span>{selected.type}</span></div><button aria-label="Abrir ficha completa" onClick={() => setAssetProfileOpen(true)}><ArrowUpRight /></button></div>
                 <div className="detail-score"><div className="score-ring" style={{ '--score': `${selected.health}%` } as React.CSSProperties}><span>{selected.health}</span></div><div><p>Índice de condición</p><strong>{selected.health < 70 ? 'Requiere atención' : selected.health < 86 ? 'Condición vigilada' : 'Condición estable'}</strong><span>Calculado con reglas del plan</span></div></div>
                 <div className="detail-stats"><div><span>HORAS ACTUALES</span><strong>{formatHours(selected.hours)} h</strong></div><div><span>INTERVALO</span><strong>{formatHours(selected.dueAt)} h</strong></div><div><span>ÚLTIMO SERVICIO</span><strong>{selected.lastService}</strong></div></div>
                 <div className="next-task"><div className="task-heading"><span>PRÓXIMA TAREA</span><Badge variant="outline">Preventivo</Badge></div><strong>{selected.nextTask}</strong><p>Basado en el plan preventivo registrado para esta máquina.</p><div className="task-progress"><span style={{ width: `${Math.min((selected.hours / selected.dueAt) * 100, 100)}%` }} /></div></div>
@@ -321,6 +251,16 @@ export default function Home() {
       </section>
 
       {notice && <div className="notice-toast"><CheckCircle2 /> {notice}</div>}
+
+      <MachineProfileSheet
+        machine={selected}
+        open={assetProfileOpen}
+        onOpenChange={setAssetProfileOpen}
+        onAskAssistant={() => {
+          setAssetProfileOpen(false);
+          setAssistantOpen(true);
+        }}
+      />
 
       <Sheet open={assistantOpen} onOpenChange={setAssistantOpen}>
         <SheetContent className="assistant-sheet sm:max-w-[520px]" showCloseButton>

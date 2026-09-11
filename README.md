@@ -26,16 +26,16 @@ Primera superficie funcional en desarrollo para la XIV Feria de Ciencia, Tecnolo
 
 La versión actual incluye:
 
-- Pantalla inicial de acceso con inicio de sesión, registro y entrada rápida a la demo.
-- Sesión local de demostración y cierre de sesión desde el tablero.
+- Entrada directa al prototipo para evitar que el acceso distraiga las pruebas científicas.
 - Tablero operativo responsivo.
 - Cinco máquinas de demostración con estados y prioridades.
-- Filtros y ficha dinámica de cada máquina.
+- Filtros y ficha central del activo con función, contexto operativo, condición y plan preventivo.
+- Estado visible de la evidencia: datos demostrativos, borradores y campos aún por validar.
 - Registro local de lecturas de horas.
 - Panel demostrativo del agente Mantis IA.
 - Flujo confirmado para crear una tarea preventiva.
 
-Los datos y el acceso actuales son demostrativos y se guardan únicamente en el navegador. Las siguientes fases incorporarán persistencia, autenticación segura, manuales técnicos y la conexión controlada con el modelo de IA.
+Los datos actuales son demostrativos y se reinician al recargar la aplicación. Las siguientes fases incorporarán los datos reales validados del laboratorio, persistencia, manuales técnicos, análisis RCM y la conexión controlada con el modelo de IA. La autenticación se evaluará más adelante si aporta valor fuera del experimento de feria.
 
 ## Desarrollo local
 
