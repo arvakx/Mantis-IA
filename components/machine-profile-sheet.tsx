@@ -23,7 +23,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
-import { formatHours, type Machine, statusStyles } from '@/lib/machines';
+import { formatHours, getNextServiceAt, getServiceProgress, type Machine, statusStyles } from '@/lib/machines';
 
 type MachineProfileSheetProps = {
   machine: Machine;
@@ -40,8 +40,9 @@ export function MachineProfileSheet({
   onAskAssistant,
   onEdit,
 }: MachineProfileSheetProps) {
-  const serviceDelta = machine.dueAt - machine.hours;
-  const progress = Math.min((machine.hours / machine.dueAt) * 100, 100);
+  const nextServiceAt = getNextServiceAt(machine);
+  const serviceDelta = nextServiceAt - machine.hours;
+  const progress = getServiceProgress(machine);
   const profileEvidenceState = machine.dataStatus === 'Validado'
     ? 'ready'
     : machine.dataStatus === 'Demostrativo' ? 'demo' : 'pending';
@@ -101,7 +102,9 @@ export function MachineProfileSheet({
             </div>
             <div className="asset-facts-grid">
               <article><Activity /><span>Horas actuales</span><strong>{formatHours(machine.hours)} h</strong></article>
-              <article><Clock3 /><span>Intervalo preventivo</span><strong>{formatHours(machine.dueAt)} h</strong></article>
+              <article><FileClock /><span>Horas último servicio</span><strong>{formatHours(machine.lastServiceHours)} h</strong></article>
+              <article><Clock3 /><span>Intervalo preventivo</span><strong>{formatHours(machine.maintenanceInterval)} h</strong></article>
+              <article><Wrench /><span>Próximo servicio</span><strong>{formatHours(nextServiceAt)} h</strong></article>
               <article><FileClock /><span>Último servicio</span><strong>{machine.lastService}</strong></article>
               <article><MapPin /><span>Ubicación</span><strong>{machine.location}</strong></article>
             </div>
@@ -124,7 +127,7 @@ export function MachineProfileSheet({
                 <Badge>{serviceDelta < 0 ? `${Math.abs(serviceDelta)} h vencidas` : `En ${serviceDelta} h`}</Badge>
               </div>
               <div className="asset-service-progress"><span style={{ width: `${progress}%` }} /></div>
-              <div className="asset-service-scale"><span>0 h</span><strong>{formatHours(machine.hours)} h registradas</strong><span>{formatHours(machine.dueAt)} h</span></div>
+              <div className="asset-service-scale"><span>{formatHours(machine.lastServiceHours)} h</span><strong>{formatHours(machine.hours)} h actuales</strong><span>{formatHours(nextServiceAt)} h</span></div>
             </div>
           </section>
 

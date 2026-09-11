@@ -35,6 +35,8 @@ La versión actual incluye:
 - Estado visible de la evidencia: datos demostrativos, borradores y campos aún por validar durante el experimento o mediante revisión experta.
 - Campos científicos sin respuestas precargadas: los estándares pendientes permanecen vacíos y claramente señalados hasta su validación.
 - Registro y edición de activos con los campos mínimos de identificación, operación, RCM, plan preventivo y fuente.
+- Modelo de contador trazable: horas actuales, horas del último servicio, intervalo preventivo y próximo servicio calculado automáticamente.
+- Estados operativos calculados con el intervalo real y un umbral de atención del 15% antes del próximo servicio.
 - Registro de activos en una superficie completa, legible y adaptable a computador o móvil.
 - Persistencia local de máquinas y lecturas para conservar el trabajo al recargar el navegador.
 - Registro local de lecturas de horas.

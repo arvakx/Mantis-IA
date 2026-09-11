@@ -32,6 +32,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import {
   calculateMachineStatus,
+  formatHours,
   type DataStatus,
   type Machine,
 } from '@/lib/machines';
@@ -53,7 +54,8 @@ type FormState = {
   type: string;
   location: string;
   hours: string;
-  dueAt: string;
+  lastServiceHours: string;
+  maintenanceInterval: string;
   lastService: string;
   nextTask: string;
   function: string;
@@ -69,7 +71,8 @@ const blankForm: FormState = {
   type: '',
   location: '',
   hours: '0',
-  dueAt: '500',
+  lastServiceHours: '0',
+  maintenanceInterval: '500',
   lastService: 'Sin servicio registrado',
   nextTask: '',
   function: '',
@@ -86,7 +89,8 @@ function machineToForm(machine: Machine): FormState {
     type: machine.type,
     location: machine.location,
     hours: String(machine.hours),
-    dueAt: String(machine.dueAt),
+    lastServiceHours: String(machine.lastServiceHours),
+    maintenanceInterval: String(machine.maintenanceInterval),
     lastService: machine.lastService,
     nextTask: machine.nextTask,
     function: machine.function,
@@ -107,6 +111,12 @@ export function MachineEditorSheet({
 }: MachineEditorSheetProps) {
   const [form, setForm] = useState<FormState>(() => mode === 'edit' && machine ? machineToForm(machine) : { ...blankForm });
   const [error, setError] = useState<string | null>(null);
+  const previewHours = Number(form.hours);
+  const previewLastServiceHours = Number(form.lastServiceHours);
+  const previewInterval = Number(form.maintenanceInterval);
+  const previewIsValid = Number.isFinite(previewHours) && Number.isFinite(previewLastServiceHours) && Number.isFinite(previewInterval) && previewInterval > 0;
+  const previewNextService = previewIsValid ? previewLastServiceHours + previewInterval : 0;
+  const previewDelta = previewNextService - previewHours;
 
   function update<Key extends keyof FormState>(key: Key, value: FormState[Key]) {
     setForm((current) => ({ ...current, [key]: value }));
@@ -117,7 +127,8 @@ export function MachineEditorSheet({
     event.preventDefault();
     const id = form.id.trim().toUpperCase().replace(/\s+/g, '-');
     const hours = Number(form.hours);
-    const dueAt = Number(form.dueAt);
+    const lastServiceHours = Number(form.lastServiceHours);
+    const maintenanceInterval = Number(form.maintenanceInterval);
 
     if (!id || !form.name.trim() || !form.type.trim() || !form.location.trim()) {
       setError('Completa la identificación básica del activo.');
@@ -127,8 +138,12 @@ export function MachineEditorSheet({
       setError('La función, el contexto operativo y la próxima tarea son obligatorios.');
       return;
     }
-    if (!Number.isFinite(hours) || hours < 0 || !Number.isFinite(dueAt) || dueAt <= 0) {
-      setError('Las horas deben ser positivas y el intervalo mayor que cero.');
+    if (!Number.isFinite(hours) || hours < 0 || !Number.isFinite(lastServiceHours) || lastServiceHours < 0 || lastServiceHours > hours) {
+      setError('Las horas actuales y las del último servicio deben ser válidas; el último servicio no puede superar el contador actual.');
+      return;
+    }
+    if (!Number.isFinite(maintenanceInterval) || maintenanceInterval <= 0) {
+      setError('El intervalo preventivo debe ser mayor que cero.');
       return;
     }
     if (mode === 'create' && existingIds.includes(id)) {
@@ -140,7 +155,7 @@ export function MachineEditorSheet({
       return;
     }
 
-    const status = calculateMachineStatus(hours, dueAt);
+    const status = calculateMachineStatus(hours, lastServiceHours, maintenanceInterval);
     const previousHealth = mode === 'edit' && machine ? machine.health : 88;
 
     onSave({
@@ -149,7 +164,8 @@ export function MachineEditorSheet({
       type: form.type.trim(),
       location: form.location.trim(),
       hours,
-      dueAt,
+      lastServiceHours,
+      maintenanceInterval,
       health: previousHealth,
       status,
       lastService: form.lastService.trim() || 'Sin servicio registrado',
@@ -187,7 +203,9 @@ export function MachineEditorSheet({
                 <label className="form-field" htmlFor="asset-location"><span><MapPin /> Ubicación</span><Input id="asset-location" value={form.location} onChange={(event) => update('location', event.target.value)} placeholder="Ej. Celda 02" /></label>
                 <label className="form-field form-span-two" htmlFor="asset-type"><span><Gauge /> Tipo de equipo</span><Input id="asset-type" value={form.type} onChange={(event) => update('type', event.target.value)} placeholder="Ej. Máquina herramienta" /></label>
                 <label className="form-field" htmlFor="asset-hours"><span><Activity /> Horas actuales</span><Input id="asset-hours" type="number" min="0" step="0.1" value={form.hours} onChange={(event) => update('hours', event.target.value)} /></label>
-                <label className="form-field" htmlFor="asset-interval"><span><Wrench /> Intervalo preventivo</span><Input id="asset-interval" type="number" min="1" step="1" value={form.dueAt} onChange={(event) => update('dueAt', event.target.value)} /></label>
+                <label className="form-field" htmlFor="asset-last-service-hours"><span><ClipboardCheck /> Horas en último servicio</span><Input id="asset-last-service-hours" type="number" min="0" step="0.1" value={form.lastServiceHours} onChange={(event) => update('lastServiceHours', event.target.value)} /></label>
+                <label className="form-field" htmlFor="asset-interval"><span><Wrench /> Intervalo preventivo</span><Input id="asset-interval" type="number" min="1" step="1" value={form.maintenanceInterval} onChange={(event) => update('maintenanceInterval', event.target.value)} /><small>Cantidad de horas entre un mantenimiento y el siguiente.</small></label>
+                <div className={`service-calculation form-span-three ${previewDelta <= 0 ? 'service-calculation-overdue' : ''}`}><div><span>PRÓXIMO SERVICIO CALCULADO</span><strong>{previewIsValid ? `${formatHours(previewNextService)} h` : 'Completa los contadores'}</strong></div>{previewIsValid && <p>{previewDelta <= 0 ? `${formatHours(Math.abs(previewDelta))} h vencidas` : `${formatHours(previewDelta)} h restantes`}<small>Último servicio ({formatHours(previewLastServiceHours)} h) + intervalo ({formatHours(previewInterval)} h)</small></p>}</div>
               </div>
             </section>
 

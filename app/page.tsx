@@ -19,6 +19,8 @@ import {
 import {
   calculateMachineStatus,
   formatHours,
+  getNextServiceAt,
+  getServiceProgress,
   initialMachines,
   statusStyles,
   type Machine,
@@ -54,6 +56,33 @@ const MACHINES_STORAGE_KEY = 'mantis-ia-assets-v1';
 const CASES_STORAGE_KEY = 'mantis-ia-rcm-cases-v1';
 const LEGACY_PENDING_STANDARD = 'Pendiente de validación con el experto de mantenimiento.';
 
+type StoredMachine = Omit<Machine, 'lastServiceHours' | 'maintenanceInterval'> & {
+  lastServiceHours?: number;
+  maintenanceInterval?: number;
+  dueAt?: number;
+};
+
+function migrateStoredMachine(machine: StoredMachine): Machine {
+  const seededMachine = initialMachines.find((item) => item.id === machine.id);
+  const legacyDueAt = Number(machine.dueAt);
+  const lastServiceHours = Number.isFinite(machine.lastServiceHours)
+    ? Number(machine.lastServiceHours)
+    : seededMachine?.lastServiceHours ?? 0;
+  const maintenanceInterval = Number.isFinite(machine.maintenanceInterval) && Number(machine.maintenanceInterval) > 0
+    ? Number(machine.maintenanceInterval)
+    : seededMachine?.maintenanceInterval ?? (Number.isFinite(legacyDueAt) ? Math.max(legacyDueAt - lastServiceHours, 1) : 500);
+  const migrated = { ...machine };
+  delete migrated.dueAt;
+
+  return {
+    ...migrated,
+    lastServiceHours,
+    maintenanceInterval,
+    status: calculateMachineStatus(machine.hours, lastServiceHours, maintenanceInterval),
+    performanceStandard: machine.performanceStandard === LEGACY_PENDING_STANDARD ? '' : machine.performanceStandard,
+  };
+}
+
 export default function Home() {
   const [machines, setMachines] = useState(initialMachines);
   const [activeView, setActiveView] = useState<ActiveView>('overview');
@@ -88,7 +117,7 @@ export default function Home() {
   const priorityMachines = useMemo(() => [...machines]
     .sort((a, b) => {
       const rank: Record<MachineStatus, number> = { Vencida: 0, 'Atención próxima': 1, Operativa: 2 };
-      return rank[a.status] - rank[b.status] || (a.dueAt - a.hours) - (b.dueAt - b.hours);
+      return rank[a.status] - rank[b.status] || (getNextServiceAt(a) - a.hours) - (getNextServiceAt(b) - b.hours);
     })
     .slice(0, 3), [machines]);
 
@@ -97,12 +126,9 @@ export default function Home() {
       const saved = window.localStorage.getItem(MACHINES_STORAGE_KEY);
       if (saved) {
         try {
-          const parsed = JSON.parse(saved) as Machine[];
+          const parsed = JSON.parse(saved) as StoredMachine[];
           if (Array.isArray(parsed) && parsed.length > 0) {
-            setMachines(parsed.map((machine) => ({
-              ...machine,
-              performanceStandard: machine.performanceStandard === LEGACY_PENDING_STANDARD ? '' : machine.performanceStandard,
-            })));
+            setMachines(parsed.map(migrateStoredMachine));
           }
         } catch {
           window.localStorage.removeItem(MACHINES_STORAGE_KEY);
@@ -159,7 +185,7 @@ export default function Home() {
       execute: () => ({
         priorities: machines
           .filter((machine) => machine.status !== 'Operativa')
-          .map((machine) => ({ id: machine.id, name: machine.name, status: machine.status, hours: machine.hours, dueAt: machine.dueAt })),
+          .map((machine) => ({ id: machine.id, name: machine.name, status: machine.status, hours: machine.hours, nextServiceAt: getNextServiceAt(machine), maintenanceInterval: machine.maintenanceInterval })),
       }),
     }, { signal: lifecycle.signal })).catch(reportError);
 
@@ -189,7 +215,7 @@ export default function Home() {
         setMachines((current) => current.map((item) => {
           if (item.id !== machineId) return item;
           const hours = item.hours + additionalHours;
-          return { ...item, hours, status: calculateMachineStatus(hours, item.dueAt) };
+          return { ...item, hours, status: calculateMachineStatus(hours, item.lastServiceHours, item.maintenanceInterval) };
         }));
         setSelectedId(machineId);
         setNotice(`Lectura registrada: +${additionalHours} h en ${machineId}`);
@@ -205,7 +231,7 @@ export default function Home() {
     setMachines((current) => current.map((machine) => {
       if (machine.id !== selected.id) return machine;
       const hours = machine.hours + 8;
-      return { ...machine, hours, status: calculateMachineStatus(hours, machine.dueAt) };
+      return { ...machine, hours, status: calculateMachineStatus(hours, machine.lastServiceHours, machine.maintenanceInterval) };
     }));
     setNotice(`Lectura registrada: +8 h en ${selected.id}`);
     window.setTimeout(() => setNotice(null), 2600);
@@ -239,7 +265,10 @@ export default function Home() {
     event.preventDefault();
     if (!prompt.trim()) return;
     setTaskCreated(false);
-    setAssistantReply(`${selected.name} superó su intervalo preventivo en ${Math.max(selected.hours - selected.dueAt, 0)} h. Recomiendo revisar primero el nivel de aceite, el filtro y el registro de temperatura antes de autorizar una nueva jornada.`);
+    const serviceDelta = getNextServiceAt(selected) - selected.hours;
+    setAssistantReply(serviceDelta <= 0
+      ? `${selected.name} superó el punto programado de servicio en ${Math.abs(serviceDelta)} h. Recomiendo verificar el plan preventivo y la evidencia registrada antes de autorizar una nueva jornada.`
+      : `${selected.name} tiene ${serviceDelta} h restantes antes del próximo servicio programado. Conviene revisar la tarea preventiva y confirmar que el contador esté actualizado.`);
     setPrompt('');
   }
 
@@ -249,7 +278,7 @@ export default function Home() {
     }
 
     return items.map((machine) => {
-      const difference = machine.dueAt - machine.hours;
+      const difference = getNextServiceAt(machine) - machine.hours;
       return (
         <button key={machine.id} className={`machine-row ${selected.id === machine.id ? 'selected' : ''}`} onClick={() => setSelectedId(machine.id)}>
           <span className="machine-identity"><i><Activity /></i><span><strong>{machine.name}</strong><small>{machine.id} · {machine.location}</small></span></span>
@@ -268,8 +297,8 @@ export default function Home() {
       <article className="machine-detail">
         <div className="detail-head"><div className="asset-code"><ScanLine /></div><div><p>{selected.id}</p><h3>{selected.name}</h3><span>{selected.type}</span></div><button aria-label="Abrir ficha completa" onClick={() => setAssetProfileOpen(true)}><ArrowUpRight /></button></div>
         <div className="detail-score"><div className="score-ring" style={{ '--score': `${selected.health}%` } as React.CSSProperties}><span>{selected.health}</span></div><div><p>Índice de condición</p><strong>{selected.health < 70 ? 'Requiere atención' : selected.health < 86 ? 'Condición vigilada' : 'Condición estable'}</strong><span>Calculado con reglas del plan</span></div></div>
-        <div className="detail-stats"><div><span>HORAS ACTUALES</span><strong>{formatHours(selected.hours)} h</strong></div><div><span>PRÓXIMO SERVICIO</span><strong>{formatHours(selected.dueAt)} h</strong></div><div><span>ÚLTIMO SERVICIO</span><strong>{selected.lastService}</strong></div></div>
-        <div className="next-task"><div className="task-heading"><span>PRÓXIMA TAREA</span><Badge variant="outline">Preventivo</Badge></div><strong>{selected.nextTask}</strong><p>Basado en el plan preventivo registrado para esta máquina.</p><div className="task-progress"><span style={{ width: `${Math.min((selected.hours / selected.dueAt) * 100, 100)}%` }} /></div></div>
+        <div className="detail-stats detail-stats-four"><div><span>HORAS ACTUALES</span><strong>{formatHours(selected.hours)} h</strong></div><div><span>ÚLTIMO SERVICIO</span><strong>{formatHours(selected.lastServiceHours)} h</strong></div><div><span>INTERVALO</span><strong>{formatHours(selected.maintenanceInterval)} h</strong></div><div><span>PRÓXIMO SERVICIO</span><strong>{formatHours(getNextServiceAt(selected))} h</strong></div></div>
+        <div className="next-task"><div className="task-heading"><span>PRÓXIMA TAREA</span><Badge variant="outline">Preventivo</Badge></div><strong>{selected.nextTask}</strong><p>Último servicio: {selected.lastService}. Próximo vencimiento calculado automáticamente.</p><div className="task-progress"><span style={{ width: `${getServiceProgress(selected)}%` }} /></div></div>
         <div className="detail-actions"><Button onClick={registerReading}><Plus data-icon="inline-start" /> Lectura</Button><Button variant="outline" onClick={() => openEditor('edit')}><Pencil data-icon="inline-start" /> Editar</Button><Button variant="outline" onClick={() => setCaseWorkspaceOpen(true)}><ClipboardCheck data-icon="inline-start" /> Caso RCM</Button></div>
       </article>
       <article className="activity-card">
@@ -368,7 +397,7 @@ export default function Home() {
                       <div className="priority-copy">
                         <div className="priority-label"><span /> {machine.status === 'Vencida' ? 'PRIORIDAD CRÍTICA' : 'ATENCIÓN PRÓXIMA'}</div>
                         <h3>{machine.name}</h3><p>{machine.id} · {machine.location}</p>
-                        <div className="priority-reason"><AlertTriangle aria-hidden="true" /><div><strong>{machine.status === 'Vencida' ? `Mantenimiento vencido por ${machine.hours - machine.dueAt} horas` : `Próximo servicio en ${machine.dueAt - machine.hours} horas`}</strong><span>{machine.nextTask}</span></div></div>
+                        <div className="priority-reason"><AlertTriangle aria-hidden="true" /><div><strong>{machine.status === 'Vencida' ? `Mantenimiento vencido por ${machine.hours - getNextServiceAt(machine)} horas` : `Próximo servicio en ${getNextServiceAt(machine) - machine.hours} horas`}</strong><span>{machine.nextTask}</span></div></div>
                         <div className="priority-actions">
                           <Button className="light-action" onClick={() => { setSelectedId(machine.id); setAssistantOpen(true); }}>Analizar con IA <Sparkles data-icon="inline-end" /></Button>
                           <Button variant="ghost" className="transparent-action" onClick={() => { setSelectedId(machine.id); setActiveView('machines'); }}>Ver en Máquinas <ChevronRight data-icon="inline-end" /></Button>

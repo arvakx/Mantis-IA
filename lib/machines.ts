@@ -7,7 +7,8 @@ export type Machine = {
   type: string;
   location: string;
   hours: number;
-  dueAt: number;
+  lastServiceHours: number;
+  maintenanceInterval: number;
   health: number;
   status: MachineStatus;
   lastService: string;
@@ -26,7 +27,8 @@ export const initialMachines: Machine[] = [
     type: 'Compresor de tornillo',
     location: 'Zona neumática',
     hours: 2547,
-    dueAt: 2500,
+    lastServiceHours: 2000,
+    maintenanceInterval: 500,
     health: 62,
     status: 'Vencida',
     lastService: '14 jun 2026',
@@ -43,7 +45,8 @@ export const initialMachines: Machine[] = [
     type: 'Taladro de columna',
     location: 'Banco 02',
     hours: 1035,
-    dueAt: 1100,
+    lastServiceHours: 600,
+    maintenanceInterval: 500,
     health: 79,
     status: 'Atención próxima',
     lastService: '02 ago 2026',
@@ -60,7 +63,8 @@ export const initialMachines: Machine[] = [
     type: 'Máquina herramienta',
     location: 'Celda de mecanizado',
     hours: 1870,
-    dueAt: 2000,
+    lastServiceHours: 1000,
+    maintenanceInterval: 1000,
     health: 84,
     status: 'Atención próxima',
     lastService: '26 jul 2026',
@@ -77,7 +81,8 @@ export const initialMachines: Machine[] = [
     type: 'Equipo hidráulico',
     location: 'Banco hidráulico',
     hours: 724,
-    dueAt: 1000,
+    lastServiceHours: 500,
+    maintenanceInterval: 500,
     health: 94,
     status: 'Operativa',
     lastService: '18 ago 2026',
@@ -94,7 +99,8 @@ export const initialMachines: Machine[] = [
     type: 'Equipo rotativo',
     location: 'Banco 04',
     hours: 390,
-    dueAt: 500,
+    lastServiceHours: 0,
+    maintenanceInterval: 500,
     health: 91,
     status: 'Operativa',
     lastService: '11 ago 2026',
@@ -117,8 +123,18 @@ export function formatHours(value: number) {
   return new Intl.NumberFormat('es-CO').format(value);
 }
 
-export function calculateMachineStatus(hours: number, dueAt: number): MachineStatus {
-  if (hours >= dueAt) return 'Vencida';
-  if (dueAt - hours <= dueAt * 0.15) return 'Atención próxima';
+export function getNextServiceAt(machine: Pick<Machine, 'lastServiceHours' | 'maintenanceInterval'>) {
+  return machine.lastServiceHours + machine.maintenanceInterval;
+}
+
+export function getServiceProgress(machine: Pick<Machine, 'hours' | 'lastServiceHours' | 'maintenanceInterval'>) {
+  const elapsedSinceService = Math.max(machine.hours - machine.lastServiceHours, 0);
+  return Math.min((elapsedSinceService / machine.maintenanceInterval) * 100, 100);
+}
+
+export function calculateMachineStatus(hours: number, lastServiceHours: number, maintenanceInterval: number): MachineStatus {
+  const nextServiceAt = lastServiceHours + maintenanceInterval;
+  if (hours >= nextServiceAt) return 'Vencida';
+  if (nextServiceAt - hours <= maintenanceInterval * 0.15) return 'Atención próxima';
   return 'Operativa';
 }

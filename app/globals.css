@@ -1231,3 +1231,28 @@ button.machine-row.selected { box-shadow: inset 4px 0 #7657ff; }
   .inventory-layout > .detail-column { display: flex; }
   .form-field.validation-required > span em { width: fit-content; margin-left: 0; }
 }
+
+/* Deterministic service-counter model */
+.form-span-three { grid-column: span 3; }
+.service-calculation { display: flex; align-items: center; justify-content: space-between; gap: 18px; min-height: 78px; padding: 14px 17px; color: #26324a; border: 1px solid #b9e5dd; border-radius: 14px; background: linear-gradient(115deg,#f3fffc,#e8fbf7); }
+.service-calculation span,.service-calculation strong,.service-calculation small { display: block; }
+.service-calculation span { color: #557069; font: 800 10px var(--font-tech); letter-spacing: .055em; }
+.service-calculation strong { margin-top: 4px; color: #08756a; font: 780 24px var(--font-numbers); }
+.service-calculation p { margin: 0; color: #08756a; text-align: right; font: 760 14px var(--font-numbers); }
+.service-calculation p small { margin-top: 4px; color: #6a7c78; font: 500 11px var(--font-tech); }
+.service-calculation-overdue { border-color: #f2bdc8; background: linear-gradient(115deg,#fff8fa,#ffedf1); }
+.service-calculation-overdue strong,.service-calculation-overdue p { color: #c93655; }
+.detail-stats.detail-stats-four { grid-template-columns: repeat(2,1fr); }
+.asset-facts-grid { grid-template-columns: repeat(3,1fr); }
+.asset-facts-grid article:nth-child(3n) { border-right: 0; }
+.asset-facts-grid article:nth-child(-n+3) { border-bottom: 1px solid #e8e4f0; }
+
+@media (max-width:680px) {
+  .form-span-three { grid-column: auto; }
+  .service-calculation { align-items: flex-start; flex-direction: column; }
+  .service-calculation p { text-align: left; }
+  .asset-facts-grid { grid-template-columns: repeat(2,1fr); }
+  .asset-facts-grid article:nth-child(3n) { border-right: 1px solid #e8e4f0; }
+  .asset-facts-grid article:nth-child(2n) { border-right: 0; }
+  .asset-facts-grid article:nth-child(-n+4) { border-bottom: 1px solid #e8e4f0; }
+}
