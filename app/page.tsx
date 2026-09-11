@@ -326,7 +326,6 @@ export default function Home() {
             <div><p>Laboratorio Piloto <ChevronRight aria-hidden="true" /> {activeView === 'overview' ? 'Vista general' : 'Máquinas'}</p><div className="top-title-line"><h1>{activeView === 'overview' ? 'Estado operativo' : 'Inventario de activos'}</h1><span>{activeView === 'overview' ? 'Monitorea, anticipa y mantén tus activos en funcionamiento.' : 'Registra, consulta y valida la información técnica de cada máquina.'}</span></div></div>
           </div>
           <div className="top-actions">
-            <div className="search-shell"><Search aria-hidden="true" /><input aria-label="Buscar máquinas" placeholder="Buscar máquina..." value={searchQuery} onFocus={() => setActiveView('machines')} onChange={(event) => setSearchQuery(event.target.value)} /><kbd>⌘ K</kbd></div>
             <Button variant="ghost" size="icon" className="icon-button" aria-label="Notificaciones"><Bell /><span className="notification-dot" /></Button>
             <Button className="primary-action" onClick={() => openEditor('create')}><Plus data-icon="inline-start" /> Registrar activo</Button>
             <div className="profile-chip" aria-label="Sesión de demostración"><span>GC</span><div><strong>Gabo</strong><small>Modo demostración</small></div></div>
@@ -402,6 +401,7 @@ export default function Home() {
                   <div className="section-head inventory-section-head">
                     <div><h3>Inventario completo</h3><p>{filteredMachines.length} de {machines.length} activos visibles</p></div>
                     <div className="inventory-controls">
+                      <div className="search-shell inventory-search"><Search aria-hidden="true" /><input aria-label="Buscar en el inventario de máquinas" placeholder="Buscar máquina, código o ubicación..." value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} /><kbd>⌘ K</kbd></div>
                       <div className="filter-pills" aria-label="Filtrar máquinas">
                         {(['Todas', 'Operativa', 'Atención próxima', 'Vencida'] as const).map((item) => (
                           <button key={item} className={filter === item ? 'active' : ''} onClick={() => setFilter(item)}>{item === 'Todas' ? 'Todas' : item === 'Operativa' ? 'Operativas' : item}</button>
