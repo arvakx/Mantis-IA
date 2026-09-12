@@ -82,7 +82,7 @@ export function MachineProfileSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="asset-sheet sm:max-w-[720px]" showCloseButton>
+      <SheetContent className="asset-sheet asset-sheet-fullscreen" showCloseButton>
         <SheetHeader className="asset-sheet-head">
           <div className="asset-sheet-kicker">
             <span>FICHA CENTRAL DEL ACTIVO</span>
