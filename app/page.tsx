@@ -98,7 +98,7 @@ export default function Home() {
   const [machines, setMachines] = useState(initialMachines);
   const [activeView, setActiveView] = useState<ActiveView>('overview');
   const [selectedId, setSelectedId] = useState('COMP-01');
-  const [filter, setFilter] = useState<'Todas' | MachineStatus>('Todas');
+  const [filter, setFilter] = useState<'Todas' | MachineStatus | 'Validados'>('Todas');
   const [searchQuery, setSearchQuery] = useState('');
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [assetProfileOpen, setAssetProfileOpen] = useState(false);
@@ -125,7 +125,8 @@ export default function Home() {
   const filteredMachines = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLocaleLowerCase('es');
     return machines.filter((machine) => {
-      const matchesStatus = filter === 'Todas' || machine.status === filter;
+      const matchesStatus = filter === 'Todas'
+        || (filter === 'Validados' ? machine.dataStatus === 'Validado' : machine.status === filter);
       const searchableText = `${machine.id} ${machine.name} ${machine.type} ${machine.manufacturer} ${machine.model} ${machine.serialNumber} ${machine.location}`.toLocaleLowerCase('es');
       return matchesStatus && (!normalizedQuery || searchableText.includes(normalizedQuery));
     });
@@ -537,13 +538,6 @@ export default function Home() {
                 <div className="hero-scanline" aria-hidden="true" />
               </section>
 
-              <section className="metric-grid" aria-label="Resumen operativo">
-                <button className="metric-card metric-violet" onClick={() => { setFilter('Todas'); setActiveView('machines'); }}><div className="metric-icon neutral"><Gauge /></div><div className="metric-copy"><p>Máquinas registradas</p><strong>{machines.length}</strong><span>inventario total</span></div><div className="mini-bars" aria-hidden="true"><i /><i /><i /><i /><i /><i /></div><ArrowUpRight className="metric-arrow" /></button>
-                <button className="metric-card metric-amber" onClick={() => { setFilter('Atención próxima'); setActiveView('machines'); }}><div className="metric-icon warning"><Clock3 /></div><div className="metric-copy"><p>Atención próxima</p><strong>{warningCount}</strong><span>por horas de uso</span></div><div className="mini-trend" aria-hidden="true"><i /><i /><i /><i /><i /></div><ArrowUpRight className="metric-arrow" /></button>
-                <button className="metric-card metric-coral critical-card" onClick={() => { setFilter('Vencida'); setActiveView('machines'); }}><div className="metric-icon critical"><AlertTriangle /></div><div className="metric-copy"><p>Mantenimiento vencido</p><strong>{overdueCount}</strong><span>requiere prioridad</span></div><div className="mini-bars coral" aria-hidden="true"><i /><i /><i /><i /><i /></div><ArrowUpRight className="metric-arrow" /></button>
-                <button className="metric-card metric-mint" onClick={() => { setFilter('Todas'); setActiveView('machines'); }}><div className="metric-icon success"><ShieldCheck /></div><div className="metric-copy"><p>Activos validados</p><strong>{validatedCount}/{machines.length}</strong><span>con fuente y revisión</span></div><div className="metric-mini-ring" style={{ '--validation-progress': `${validatedPercent}%` } as React.CSSProperties}><span>{validatedPercent}%</span></div><ArrowUpRight className="metric-arrow" /></button>
-              </section>
-
               <section className="priority-showcase" aria-labelledby="priority-showcase-title">
                 <div className="priority-showcase-head">
                   <div><span>FOCO OPERATIVO</span><h3 id="priority-showcase-title">Prioridades inmediatas</h3><p>Los tres activos que requieren atención primero, ordenados por urgencia.</p></div>
@@ -583,6 +577,13 @@ export default function Home() {
                 </div>
               </section>
 
+              <section className="metric-grid inventory-metrics" aria-label="Resumen y filtros del inventario">
+                <button className="metric-card metric-violet" aria-pressed={filter === 'Todas'} onClick={() => setFilter('Todas')}><div className="metric-icon neutral"><Gauge /></div><div className="metric-copy"><p>Máquinas registradas</p><strong>{machines.length}</strong><span>mostrar inventario total</span></div><div className="mini-bars" aria-hidden="true"><i /><i /><i /><i /><i /><i /></div><ArrowUpRight className="metric-arrow" /></button>
+                <button className="metric-card metric-amber" aria-pressed={filter === 'Atención próxima'} onClick={() => setFilter('Atención próxima')}><div className="metric-icon warning"><Clock3 /></div><div className="metric-copy"><p>Atención próxima</p><strong>{warningCount}</strong><span>filtrar por horas de uso</span></div><div className="mini-trend" aria-hidden="true"><i /><i /><i /><i /><i /></div><ArrowUpRight className="metric-arrow" /></button>
+                <button className="metric-card metric-coral critical-card" aria-pressed={filter === 'Vencida'} onClick={() => setFilter('Vencida')}><div className="metric-icon critical"><AlertTriangle /></div><div className="metric-copy"><p>Mantenimiento vencido</p><strong>{overdueCount}</strong><span>mostrar activos prioritarios</span></div><div className="mini-bars coral" aria-hidden="true"><i /><i /><i /><i /><i /></div><ArrowUpRight className="metric-arrow" /></button>
+                <button className="metric-card metric-mint" aria-pressed={filter === 'Validados'} onClick={() => setFilter('Validados')}><div className="metric-icon success"><ShieldCheck /></div><div className="metric-copy"><p>Activos validados</p><strong>{validatedCount}/{machines.length}</strong><span>filtrar con fuente y revisión</span></div><div className="metric-mini-ring" style={{ '--validation-progress': `${validatedPercent}%` } as React.CSSProperties}><span>{validatedPercent}%</span></div><ArrowUpRight className="metric-arrow" /></button>
+              </section>
+
               <section className="inventory-layout">
                 <article className="machine-panel inventory-panel">
                   <div className="section-head inventory-section-head">
@@ -590,7 +591,7 @@ export default function Home() {
                     <div className="inventory-controls">
                       <div className="search-shell inventory-search"><Search aria-hidden="true" /><input ref={searchInputRef} aria-label="Buscar en el inventario de máquinas" placeholder="Buscar máquina, código, modelo o serie..." value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} /><kbd>Ctrl K</kbd></div>
                       <div className="filter-pills" aria-label="Filtrar máquinas">
-                        {(['Todas', 'Operativa', 'Atención próxima', 'Vencida'] as const).map((item) => (
+                        {(['Todas', 'Operativa', 'Atención próxima', 'Vencida', 'Validados'] as const).map((item) => (
                           <button key={item} className={filter === item ? 'active' : ''} aria-pressed={filter === item} onClick={() => setFilter(item)}>{item === 'Todas' ? 'Todas' : item === 'Operativa' ? 'Operativas' : item}</button>
                         ))}
                       </div>

@@ -1210,6 +1210,9 @@ button.machine-row.selected { box-shadow: inset 4px 0 #7657ff; }
 .section-head-action:hover { color: #34209d; background: #e9e3ff; }
 .section-head-action svg { width: 15px; }
 .inventory-content { padding-top: 24px; }
+.inventory-metrics { margin-bottom: 18px; }
+.inventory-metrics .metric-card[aria-pressed='true'] { border-color: #775cf6; box-shadow: 0 0 0 3px rgba(112,82,242,.12),0 18px 40px rgba(35,49,85,.1); transform: translateY(-2px); }
+.inventory-metrics .metric-card[aria-pressed='true'] .metric-arrow { color: #6545ee; }
 .inventory-intro { display: grid; grid-template-columns: minmax(0,1fr) minmax(420px,.8fr); align-items: center; gap: 24px; margin-bottom: 18px; padding: 24px 27px; color: #fff; border: 1px solid #263c72; border-radius: 18px; background: radial-gradient(circle at 88% 30%,rgba(31,225,194,.22),transparent 18rem),linear-gradient(112deg,#07142d,#142b62 70%,#11485b); box-shadow: 0 18px 42px rgba(15,25,62,.16); }
 .inventory-heading [data-slot='badge'] { gap: 6px; height: 27px; color: #d9fff7; border: 1px solid rgba(69,226,199,.4); background: rgba(10,134,112,.48); font: 800 10px var(--font-tech); letter-spacing: .05em; }
 .inventory-heading [data-slot='badge'] svg { width: 14px; }
