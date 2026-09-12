@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Activity, AlertTriangle, ArrowUpRight, Bell, Bot, CheckCircle2, ClipboardCheck,
   ChevronRight, Clock3, FileText, Gauge, History,
@@ -53,7 +53,6 @@ const navItems = [
   { id: 'machines' as const, label: 'Máquinas', icon: Gauge },
   { label: 'Mantenimiento', icon: Wrench },
   { label: 'Historial', icon: History },
-  { label: 'Documentos', icon: FileText },
 ];
 
 const MACHINES_STORAGE_KEY = 'mantis-ia-assets-v1';
@@ -118,8 +117,9 @@ export default function Home() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [prompt, setPrompt] = useState('');
   const [assistantReply, setAssistantReply] = useState<string | null>(null);
-  const [taskCreated, setTaskCreated] = useState(false);
+  const [assistantSource, setAssistantSource] = useState('Plan preventivo registrado');
   const [notice, setNotice] = useState<string | null>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const selected = machines.find((machine) => machine.id === selectedId) ?? machines[0];
   const filteredMachines = useMemo(() => {
@@ -132,6 +132,8 @@ export default function Home() {
   }, [filter, machines, searchQuery]);
   const overdueCount = machines.filter((machine) => machine.status === 'Vencida').length;
   const warningCount = machines.filter((machine) => machine.status === 'Atención próxima').length;
+  const validatedCount = machines.filter((machine) => machine.dataStatus === 'Validado').length;
+  const validatedPercent = machines.length > 0 ? Math.round((validatedCount / machines.length) * 100) : 0;
   const priorityMachines = useMemo(() => [...machines]
     .sort((a, b) => {
       const rank: Record<MachineStatus, number> = { Vencida: 0, 'Atención próxima': 1, Operativa: 2 };
@@ -249,6 +251,18 @@ export default function Home() {
     if (!maintenanceReady) return;
     window.localStorage.setItem(MAINTENANCE_STORAGE_KEY, JSON.stringify(maintenanceRecords));
   }, [maintenanceReady, maintenanceRecords]);
+
+  useEffect(() => {
+    function focusInventorySearch(event: KeyboardEvent) {
+      if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 'k') return;
+      event.preventDefault();
+      setActiveView('machines');
+      window.requestAnimationFrame(() => searchInputRef.current?.focus());
+    }
+
+    window.addEventListener('keydown', focusInventorySearch);
+    return () => window.removeEventListener('keydown', focusInventorySearch);
+  }, []);
 
   useEffect(() => {
     const context = (document as Document & { modelContext?: WebMcpContext }).modelContext;
@@ -383,11 +397,23 @@ export default function Home() {
   function askAssistant(event: { preventDefault: () => void }) {
     event.preventDefault();
     if (!prompt.trim()) return;
-    setTaskCreated(false);
+    const normalizedPrompt = prompt.trim().toLocaleLowerCase('es');
     const serviceDelta = getNextServiceAt(selected) - selected.hours;
-    setAssistantReply(serviceDelta <= 0
-      ? `${selected.name} superó el punto programado de servicio en ${Math.abs(serviceDelta)} h. Recomiendo verificar el plan preventivo y la evidencia registrada antes de autorizar una nueva jornada.`
-      : `${selected.name} tiene ${serviceDelta} h restantes antes del próximo servicio programado. Conviene revisar la tarea preventiva y confirmar que el contador esté actualizado.`);
+
+    if (normalizedPrompt.includes('historial')) {
+      const latestMaintenance = selectedMaintenanceRecords[0];
+      const latestReading = selectedReadings[0];
+      setAssistantReply(`El historial local de ${selected.name} contiene ${selectedMaintenanceRecords.length} mantenimiento${selectedMaintenanceRecords.length === 1 ? '' : 's'} y ${selectedReadings.length} lectura${selectedReadings.length === 1 ? '' : 's'} de horómetro.${latestMaintenance ? ` La última intervención registrada fue “${latestMaintenance.completedTask}”.` : ' Todavía no hay una intervención ejecutada.'}${latestReading ? ` La lectura más reciente dejó el horómetro en ${formatHours(latestReading.currentHours)} h.` : ' Todavía no existe una lectura trazable.'}`);
+      setAssistantSource('Historial local del activo');
+    } else if (normalizedPrompt.includes('inspeccion')) {
+      setAssistantReply(`Empieza verificando la tarea registrada: “${selected.nextTask}”. Confirma el horómetro físico, revisa la fuente del plan y documenta cualquier hallazgo antes de intervenir. ${selected.performanceStandard ? `El estándar cargado es: ${selected.performanceStandard}` : 'El estándar de desempeño sigue pendiente, por lo que esta orientación no debe tomarse como un procedimiento aprobado.'}`);
+      setAssistantSource('Plan preventivo y ficha del activo');
+    } else {
+      setAssistantReply(serviceDelta <= 0
+        ? `${selected.name} superó el punto programado de servicio en ${formatHours(Math.abs(serviceDelta))} h. La prioridad proviene únicamente del horómetro y del intervalo cargado; conviene verificar ambos datos y la evidencia antes de autorizar una nueva jornada.`
+        : `${selected.name} tiene ${formatHours(serviceDelta)} h restantes antes del próximo servicio programado. Esta alerta se calcula con el horómetro actual, las horas del último servicio y el intervalo preventivo registrado.`);
+      setAssistantSource('Contador e intervalo preventivo');
+    }
     setPrompt('');
   }
 
@@ -399,12 +425,12 @@ export default function Home() {
     return items.map((machine) => {
       const difference = getNextServiceAt(machine) - machine.hours;
       return (
-        <button key={machine.id} className={`machine-row ${selected.id === machine.id ? 'selected' : ''}`} onClick={() => setSelectedId(machine.id)}>
+        <button key={machine.id} className={`machine-row ${selected.id === machine.id ? 'selected' : ''}`} aria-current={selected.id === machine.id ? 'true' : undefined} onClick={() => setSelectedId(machine.id)}>
           <span className="machine-identity"><i><Activity /></i><span><strong>{machine.name}</strong><small>{machine.id} · {machine.location}</small></span></span>
           <span><Badge className={`status-badge ${statusStyles[machine.status]}`}>{machine.status}</Badge></span>
           <span className="mono-value">{formatHours(machine.hours)} h</span>
           <span className={difference < 0 ? 'due-critical' : 'due-value'}>{difference < 0 ? `${Math.abs(difference)} h vencidas` : `en ${difference} h`}</span>
-          <span className="condition-cell"><strong>{machine.health}%</strong><i aria-hidden="true"><b style={{ width: `${machine.health}%` }} /></i></span>
+          <span className="condition-cell" aria-label={`Indicador visual demostrativo: ${machine.health} de 100; fórmula pendiente de validación`}><strong>{machine.health}/100</strong><i aria-hidden="true"><b style={{ width: `${machine.health}%` }} /></i></span>
           <span className="row-arrow"><ChevronRight /></span>
         </button>
       );
@@ -419,7 +445,7 @@ export default function Home() {
     <aside className="detail-column">
       <article className={`machine-detail ${selectedServiceIsDue ? 'machine-detail-overdue' : ''}`}>
         <div className="detail-head"><div className="asset-code"><ScanLine /></div><div><p>{selected.id}</p><h3>{selected.name}</h3><span>{selected.manufacturer || selected.model ? `${selected.manufacturer}${selected.manufacturer && selected.model ? ' · ' : ''}${selected.model}` : selected.type}</span></div><button aria-label="Abrir ficha completa" onClick={() => setAssetProfileOpen(true)}><ArrowUpRight /></button></div>
-        <div className="detail-score"><div className="score-ring" style={{ '--score': `${selected.health}%` } as React.CSSProperties}><span>{selected.health}</span></div><div><p>Índice de condición</p><strong>{selected.health < 70 ? 'Requiere atención' : selected.health < 86 ? 'Condición vigilada' : 'Condición estable'}</strong><span>Calculado con reglas del plan</span></div></div>
+        <div className="detail-score detail-score-demo"><div className="score-ring" style={{ '--score': `${selected.health}%` } as React.CSSProperties}><span>{selected.health}</span></div><div><p>INDICADOR VISUAL · DEMO</p><strong>{selected.health}/100 · No validado</strong><span>Fórmula pendiente; no determina la prioridad.</span></div></div>
         <div className={`service-state-banner ${selectedServiceIsDue ? 'overdue' : 'upcoming'}`}>{selectedServiceIsDue ? <AlertTriangle /> : <Clock3 />}<div><span>{selectedServiceDelta < 0 ? 'MANTENIMIENTO VENCIDO' : selectedServiceDelta === 0 ? 'MANTENIMIENTO REQUERIDO' : 'SERVICIO PROGRAMADO'}</span><strong>{selectedServiceDelta < 0 ? `${formatHours(Math.abs(selectedServiceDelta))} h vencidas` : selectedServiceDelta === 0 ? 'Debe realizarse ahora' : `${formatHours(selectedServiceDelta)} h restantes`}</strong><small>{selectedServiceIsDue ? `Venció a las ${formatHours(selectedNextServiceAt)} h` : `Programado a las ${formatHours(selectedNextServiceAt)} h`}</small></div></div>
         <div className="detail-stats detail-stats-four"><div><span>HORAS ACTUALES</span><strong>{formatHours(selected.hours)} h</strong></div><div><span>ÚLTIMO SERVICIO</span><strong>{formatHours(selected.lastServiceHours)} h</strong></div><div><span>INTERVALO</span><strong>{formatHours(selected.maintenanceInterval)} h</strong></div><div className={selectedServiceIsDue ? 'service-deadline-expired' : ''}><span>{selectedServiceIsDue ? 'VENCIÓ A LAS' : 'PRÓXIMO SERVICIO'}</span><strong>{formatHours(selectedNextServiceAt)} h</strong></div></div>
         <div className="next-task"><div className="task-heading"><span>{selectedServiceIsDue ? 'TAREA PENDIENTE' : 'PRÓXIMA TAREA'}</span><Badge variant="outline">Preventivo</Badge></div><strong>{selected.nextTask}</strong><p>{selectedServiceDelta < 0 ? `Debió ejecutarse a las ${formatHours(selectedNextServiceAt)} h y acumula ${formatHours(Math.abs(selectedServiceDelta))} h de retraso.` : selectedServiceDelta === 0 ? `Debe ejecutarse ahora, al alcanzar las ${formatHours(selectedNextServiceAt)} h.` : `Programada para las ${formatHours(selectedNextServiceAt)} h. Último servicio: ${selected.lastService}.`}</p><div className="task-progress"><span style={{ width: `${getServiceProgress(selected)}%` }} /></div></div>
@@ -454,6 +480,10 @@ export default function Home() {
                   setActiveView('machines');
                   setMaintenanceDialogOpen(true);
                 }
+                if (label === 'Historial') {
+                  setActiveView('machines');
+                  setAssetProfileOpen(true);
+                }
                 setMobileNavOpen(false);
               }}
             >
@@ -466,7 +496,7 @@ export default function Home() {
           <button className="nav-item" onClick={() => setAssistantOpen(true)}>
             <Bot aria-hidden="true" /><span>Agente IA</span><Sparkles className="nav-spark" aria-hidden="true" />
           </button>
-          <button className="nav-item"><Settings aria-hidden="true" /><span>Configuración</span></button>
+          <button hidden data-future-feature="settings" className="nav-item"><Settings aria-hidden="true" /><span>Configuración</span></button>
         </nav>
 
         <div className="rail-foot">
@@ -474,6 +504,7 @@ export default function Home() {
           <p>Demo científica · v0.1</p>
         </div>
       </aside>
+      {mobileNavOpen && <button className="mobile-nav-backdrop" aria-label="Cerrar navegación" onClick={() => setMobileNavOpen(false)} />}
 
       <section className="workspace">
         <header className="top-bar">
@@ -483,7 +514,7 @@ export default function Home() {
           </div>
           <div className="top-actions">
             <Button hidden data-future-feature="notifications" variant="ghost" size="icon" className="icon-button" aria-label="Notificaciones"><Bell /><span className="notification-dot" /></Button>
-            <Button className="primary-action" onClick={() => openEditor('create')}><Plus data-icon="inline-start" /> Registrar activo</Button>
+            {activeView === 'overview' && <Button className="primary-action" onClick={() => openEditor('create')}><Plus data-icon="inline-start" /> Registrar activo</Button>}
             <div className="profile-chip" aria-label="Sesión de demostración"><span>GC</span><div><strong>Gabo</strong><small>Modo demostración</small></div></div>
           </div>
         </header>
@@ -507,10 +538,10 @@ export default function Home() {
               </section>
 
               <section className="metric-grid" aria-label="Resumen operativo">
-                <article className="metric-card metric-violet"><div className="metric-icon neutral"><Gauge /></div><div className="metric-copy"><p>Máquinas registradas</p><strong>{machines.length}</strong><span>inventario total</span></div><div className="mini-bars" aria-hidden="true"><i /><i /><i /><i /><i /><i /></div><ArrowUpRight className="metric-arrow" /></article>
-                <article className="metric-card metric-amber"><div className="metric-icon warning"><Clock3 /></div><div className="metric-copy"><p>Atención próxima</p><strong>{warningCount}</strong><span>por horas de uso</span></div><div className="mini-trend" aria-hidden="true"><i /><i /><i /><i /><i /></div><ArrowUpRight className="metric-arrow" /></article>
-                <article className="metric-card metric-coral critical-card"><div className="metric-icon critical"><AlertTriangle /></div><div className="metric-copy"><p>Mantenimiento vencido</p><strong>{overdueCount}</strong><span>requiere prioridad</span></div><div className="mini-bars coral" aria-hidden="true"><i /><i /><i /><i /><i /></div><ArrowUpRight className="metric-arrow" /></article>
-                <article className="metric-card metric-mint"><div className="metric-icon success"><ShieldCheck /></div><div className="metric-copy"><p>Cumplimiento del plan</p><strong>87%</strong><span>dato demostrativo</span></div><div className="metric-mini-ring"><span>87</span></div><ArrowUpRight className="metric-arrow" /></article>
+                <button className="metric-card metric-violet" onClick={() => { setFilter('Todas'); setActiveView('machines'); }}><div className="metric-icon neutral"><Gauge /></div><div className="metric-copy"><p>Máquinas registradas</p><strong>{machines.length}</strong><span>inventario total</span></div><div className="mini-bars" aria-hidden="true"><i /><i /><i /><i /><i /><i /></div><ArrowUpRight className="metric-arrow" /></button>
+                <button className="metric-card metric-amber" onClick={() => { setFilter('Atención próxima'); setActiveView('machines'); }}><div className="metric-icon warning"><Clock3 /></div><div className="metric-copy"><p>Atención próxima</p><strong>{warningCount}</strong><span>por horas de uso</span></div><div className="mini-trend" aria-hidden="true"><i /><i /><i /><i /><i /></div><ArrowUpRight className="metric-arrow" /></button>
+                <button className="metric-card metric-coral critical-card" onClick={() => { setFilter('Vencida'); setActiveView('machines'); }}><div className="metric-icon critical"><AlertTriangle /></div><div className="metric-copy"><p>Mantenimiento vencido</p><strong>{overdueCount}</strong><span>requiere prioridad</span></div><div className="mini-bars coral" aria-hidden="true"><i /><i /><i /><i /><i /></div><ArrowUpRight className="metric-arrow" /></button>
+                <button className="metric-card metric-mint" onClick={() => { setFilter('Todas'); setActiveView('machines'); }}><div className="metric-icon success"><ShieldCheck /></div><div className="metric-copy"><p>Activos validados</p><strong>{validatedCount}/{machines.length}</strong><span>con fuente y revisión</span></div><div className="metric-mini-ring" style={{ '--validation-progress': `${validatedPercent}%` } as React.CSSProperties}><span>{validatedPercent}%</span></div><ArrowUpRight className="metric-arrow" /></button>
               </section>
 
               <section className="priority-showcase" aria-labelledby="priority-showcase-title">
@@ -530,7 +561,7 @@ export default function Home() {
                           <Button variant="ghost" className="transparent-action" onClick={() => { setSelectedId(machine.id); setActiveView('machines'); }}>Ver en Máquinas <ChevronRight data-icon="inline-end" /></Button>
                         </div>
                       </div>
-                      <div className="health-orbit" style={{ '--health': `${machine.health}%` } as React.CSSProperties}><div><strong>{machine.health}</strong><span>Salud estimada</span></div><i className="orbit-dot" /></div>
+                      <div className="health-orbit" style={{ '--health': `${machine.health}%` } as React.CSSProperties}><div><strong>{machine.health}</strong><span>Indicador demo</span><small>No define prioridad</small></div><i className="orbit-dot" /></div>
                       <div className="technical-grid" aria-hidden="true" />
                       <div className="priority-image-glow" aria-hidden="true" />
                     </article>
@@ -557,17 +588,17 @@ export default function Home() {
                   <div className="section-head inventory-section-head">
                     <div><h3>Inventario completo</h3><p>{filteredMachines.length} de {machines.length} activos visibles</p></div>
                     <div className="inventory-controls">
-                      <div className="search-shell inventory-search"><Search aria-hidden="true" /><input aria-label="Buscar en el inventario de máquinas" placeholder="Buscar máquina, código, modelo o serie..." value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} /><kbd>⌘ K</kbd></div>
+                      <div className="search-shell inventory-search"><Search aria-hidden="true" /><input ref={searchInputRef} aria-label="Buscar en el inventario de máquinas" placeholder="Buscar máquina, código, modelo o serie..." value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} /><kbd>Ctrl K</kbd></div>
                       <div className="filter-pills" aria-label="Filtrar máquinas">
                         {(['Todas', 'Operativa', 'Atención próxima', 'Vencida'] as const).map((item) => (
-                          <button key={item} className={filter === item ? 'active' : ''} onClick={() => setFilter(item)}>{item === 'Todas' ? 'Todas' : item === 'Operativa' ? 'Operativas' : item}</button>
+                          <button key={item} className={filter === item ? 'active' : ''} aria-pressed={filter === item} onClick={() => setFilter(item)}>{item === 'Todas' ? 'Todas' : item === 'Operativa' ? 'Operativas' : item}</button>
                         ))}
                       </div>
                       <Button className="inventory-register" onClick={() => openEditor('create')}><Plus data-icon="inline-start" /> Registrar activo</Button>
                     </div>
                   </div>
                   <div className="machine-table" aria-label="Inventario de máquinas">
-                    <div className="machine-row table-head"><span>MÁQUINA</span><span>ESTADO</span><span>HORAS</span><span>PRÓXIMO SERVICIO</span><span>CONDICIÓN</span><span /></div>
+                    <div className="machine-row table-head"><span>MÁQUINA</span><span>ESTADO</span><span>HORAS</span><span>PRÓXIMO SERVICIO</span><span>INDICADOR DEMO</span><span /></div>
                     {renderMachineRows(filteredMachines)}
                   </div>
                 </article>
@@ -629,9 +660,9 @@ export default function Home() {
           <SheetHeader className="assistant-head"><div className="assistant-avatar"><Bot /></div><div><div className="assistant-title-row"><SheetTitle>Mantis IA</SheetTitle><Badge className="demo-badge">MODO DEMO</Badge></div><SheetDescription>Asistente de mantenimiento con respuestas trazables.</SheetDescription></div></SheetHeader>
           <div className="assistant-context"><span>CONTEXTO ACTIVO</span><div><Activity /><strong>{selected.name}</strong><small>{selected.id} · {formatHours(selected.hours)} h</small></div></div>
           <div className="assistant-thread">
-            <div className="assistant-welcome"><Sparkles /><h3>¿Qué necesitas entender?</h3><p>Puedo explicar alertas, revisar historiales y preparar tareas usando los datos registrados.</p></div>
+            <div className="assistant-welcome"><Sparkles /><h3>¿Qué necesitas entender?</h3><p>Puedo explicar alertas, resumir historiales y guiar registros usando los datos disponibles.</p></div>
             {!assistantReply && <div className="suggestion-grid"><button onClick={() => setPrompt('¿Por qué esta máquina requiere atención?')}>¿Por qué requiere atención?</button><button onClick={() => setPrompt('¿Qué debo inspeccionar primero?')}>¿Qué inspecciono primero?</button><button onClick={() => setPrompt('Resume el historial reciente')}>Resumir historial</button></div>}
-            {assistantReply && <div className="assistant-response"><div className="response-icon"><Bot /></div><div><p>{assistantReply}</p><div className="source-chip"><FileText /> Fuente: plan preventivo registrado · {selected.id}</div>{!taskCreated ? <Button onClick={() => setTaskCreated(true)}><Wrench data-icon="inline-start" /> Crear tarea preventiva</Button> : <div className="task-success"><CheckCircle2 /> Tarea creada con confirmación</div>}</div></div>}
+            {assistantReply && <div className="assistant-response"><div className="response-icon"><Bot /></div><div><p>{assistantReply}</p><div className="source-chip"><FileText /> Fuente: {assistantSource} · {selected.id}</div><div className="assistant-response-actions"><Button onClick={() => { setAssistantOpen(false); setMaintenanceDialogOpen(true); }}><Wrench data-icon="inline-start" /> Registrar servicio</Button><Button variant="outline" onClick={() => { setAssistantOpen(false); setCaseWorkspaceOpen(true); }}><ClipboardCheck data-icon="inline-start" /> Abrir caso RCM</Button></div></div></div>}
           </div>
           <form className="assistant-composer" onSubmit={askAssistant}><textarea value={prompt} onChange={(event) => setPrompt(event.target.value)} placeholder="Pregúntale sobre esta máquina..." aria-label="Pregunta para Mantis IA" /><div><span><ShieldCheck /> Las acciones requieren confirmación</span><Button type="submit" size="icon" aria-label="Enviar pregunta"><Send /></Button></div></form>
         </SheetContent>

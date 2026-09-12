@@ -1452,3 +1452,58 @@ button.machine-row.selected { box-shadow: inset 4px 0 #7657ff; }
   .maintenance-history-row { grid-template-columns: auto 1fr; align-items: flex-start; }
   .maintenance-history-states { grid-column: 2; align-items: flex-start; }
 }
+
+/* MVP audit: honest evidence states, functional affordances and readable density */
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible {
+  outline: 3px solid rgba(105,70,247,.28);
+  outline-offset: 2px;
+}
+.mobile-nav-backdrop { display: none; }
+.top-title-line h1 { font-size: 23px; }
+.top-title-line > span { font-size: 13px; }
+.metric-card { appearance: none; width: 100%; color: inherit; text-align: left; cursor: pointer; }
+.metric-card:focus-visible { box-shadow: 0 0 0 4px rgba(105,70,247,.14),0 18px 40px rgba(35,49,85,.1); }
+.metric-card p { font-size: 14px; }
+.metric-card span { font-size: 13px; }
+.metric-mini-ring { background: conic-gradient(#17bca5 var(--validation-progress),#ccece7 0); }
+.metric-mini-ring span { font-size: 11px; }
+.health-orbit span { color: #b8c8d8; font: 800 11px var(--font-tech); letter-spacing: .035em; text-transform: uppercase; }
+.health-orbit small { display: block; margin-top: 5px; color: #ffcf72; font-size: 10px; font-weight: 700; }
+.detail-score-demo { border: 1px solid #ead4a3; background: linear-gradient(115deg,#fffdf7,#fff6e1); }
+.detail-score-demo .score-ring { background: conic-gradient(#7557f5 var(--score),#e8e1f8 0); }
+.detail-score-demo .score-ring::after { background: #fffaf0; }
+.detail-score-demo p { color: #73561a; font: 800 10px var(--font-tech); letter-spacing: .04em; }
+.detail-score-demo strong { color: #40335e; }
+.detail-score-demo span { color: #796f84; line-height: 1.4; }
+.inventory-search input { font-size: 14px; }
+.inventory-search kbd { white-space: nowrap; font-size: 11px; }
+.filter-pills button { min-height: 32px; font-size: 12px; }
+.inventory-register { font-size: 13px; }
+.detail-stats span { font-size: 10px; }
+.detail-stats strong { font-size: 13px; }
+.detail-actions button { font-size: 12px; }
+.assistant-head [data-slot='sheet-description'] { font-size: 12px; }
+.demo-badge { height: 21px; font-size: 9px; }
+.assistant-context > span { font-size: 10px; }
+.assistant-context strong { font-size: 13px; }
+.assistant-context small { font-size: 10px; }
+.assistant-welcome p,.suggestion-grid button,.assistant-response p,.assistant-composer textarea { font-size: 13px; }
+.source-chip { font-size: 10px; line-height: 1.45; }
+.assistant-response-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.assistant-response-actions button { height: 38px; font-size: 11px; }
+.assistant-response-actions button:last-child { color: #d9e6df; border-color: #3a5246; background: #16271f; }
+.assistant-composer span { font-size: 10px; }
+
+@media (max-width:920px) {
+  .mobile-nav-backdrop { position: fixed; z-index: 25; inset: 0; display: block; border: 0; background: rgba(5,10,25,.5); backdrop-filter: blur(3px); }
+}
+
+@media (max-width:680px) {
+  .top-title-line h1 { font-size: 19px; }
+  .metric-card p { font-size: 14px; }
+  .priority-panel h3 { font-size: 27px; }
+  .priority-reason strong { font-size: 13px; }
+  .priority-reason span { font-size: 12px; }
+  .health-orbit small { font-size: 9px; }
+  .notice-toast { left: 14px; right: 14px; bottom: 14px; justify-content: center; }
+}

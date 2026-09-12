@@ -28,10 +28,12 @@ La versión actual incluye:
 
 - Entrada directa al prototipo para evitar que el acceso distraiga las pruebas científicas.
 - Tablero operativo responsivo con lenguaje visual de cabina industrial, métricas gráficas y tres tarjetas visuales de prioridad.
+- Métricas del tablero conectadas al inventario: cada tarjeta abre el conjunto correspondiente y la validación se calcula desde los datos, sin porcentajes ficticios.
 - Vista independiente de Máquinas con inventario completo, búsqueda por código, nombre, fabricante, modelo o serie, filtros, selección, detalle contextual y acceso al registro de activos.
 - Escena industrial original para contextualizar el laboratorio sin representar una máquina real de la USTA.
 - Cinco máquinas de demostración con estados y prioridades.
 - Filtros y ficha central del activo con función, contexto operativo, condición y plan preventivo.
+- El indicador visual de condición permanece identificado como demostrativo y no validado; no interviene en la prioridad ni se presenta como diagnóstico.
 - Estado visible de la evidencia: datos demostrativos, borradores y campos aún por validar durante el experimento o mediante revisión experta.
 - Campos científicos sin respuestas precargadas: los estándares pendientes permanecen vacíos y claramente señalados hasta su validación.
 - Registro y edición de activos con identidad técnica de placa —fabricante, modelo y número de serie—, operación, RCM, plan preventivo y fuente.
@@ -48,8 +50,9 @@ La versión actual incluye:
 - Historial de mantenimiento por activo y actividad reciente ordenada cronológicamente a partir de registros reales del prototipo.
 - Casos de mantenimiento guiados por la cadena RCM: función, falla funcional, modo, causa, efecto, consecuencia, política, intervalo y fuente.
 - Puerta de calidad que separa completitud documental, preparación para revisión y validación por un experto identificado.
-- Panel demostrativo del agente Mantis IA.
-- Flujo confirmado para crear una tarea preventiva.
+- Panel demostrativo del agente Mantis IA con respuestas distintas para alertas, inspección e historial, construidas desde la máquina seleccionada.
+- Acciones reales desde el agente para registrar un servicio o abrir un caso RCM; se eliminó la simulación de tareas guardadas.
+- Atajo `Ctrl + K` para abrir y enfocar la búsqueda del inventario, navegación móvil con cierre seguro y controles inactivos fuera de la vista hasta que tengan una función real.
 
 Los datos incluidos de fábrica son demostrativos. Los activos creados o editados quedan guardados en el navegador del dispositivo; todavía no existe una base de datos compartida. Las siguientes fases incorporarán los datos reales validados del laboratorio, manuales técnicos, análisis RCM y la conexión controlada con el modelo de IA. La autenticación se evaluará más adelante si aporta valor fuera del experimento de feria.
 

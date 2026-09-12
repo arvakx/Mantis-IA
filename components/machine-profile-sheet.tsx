@@ -107,9 +107,9 @@ export function MachineProfileSheet({
                 <span>/ 100</span>
               </div>
               <div>
-                <span>CONDICIÓN ESTIMADA</span>
-                <strong>{machine.health < 70 ? 'Atención prioritaria' : machine.health < 86 ? 'Condición vigilada' : 'Condición estable'}</strong>
-                <small>Regla demostrativa, no diagnóstico</small>
+                <span>INDICADOR VISUAL · DEMO</span>
+                <strong>{machine.health}/100 · No validado</strong>
+                <small>La fórmula sigue pendiente de datos reales; no es un diagnóstico ni define la prioridad.</small>
               </div>
             </div>
             <div className="asset-function">

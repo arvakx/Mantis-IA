@@ -206,7 +206,7 @@ export function MaintenanceRecordDialog({
           {error && <div className="maintenance-error" role="alert"><AlertTriangle /> {error}</div>}
 
           <DialogFooter className="maintenance-dialog-actions">
-            <div><ShieldCheck /><span>Guardar no cambia la condición estimada ni afirma que la máquina quedó reparada.</span></div>
+            <div><ShieldCheck /><span>Guardar no cambia el indicador visual demostrativo ni afirma que la máquina quedó reparada.</span></div>
             <div><Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancelar</Button><Button type="submit"><Save data-icon="inline-start" /> Guardar mantenimiento</Button></div>
           </DialogFooter>
         </form>
