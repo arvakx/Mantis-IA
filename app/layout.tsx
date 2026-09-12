@@ -24,9 +24,9 @@ const ibmPlexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Mantis IA | Mantenimiento inteligente',
+  title: 'Mantis IA | Gestión de mantenimiento',
   description:
-    'Plataforma inteligente para planificar, explicar y documentar el mantenimiento preventivo de maquinaria.',
+    'Plataforma visual para planificar y documentar el mantenimiento preventivo de maquinaria.',
 };
 
 export default function RootLayout({

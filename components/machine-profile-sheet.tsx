@@ -38,6 +38,7 @@ type MachineProfileSheetProps = {
   maintenanceRecords: MaintenanceRecord[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  assistantEnabled: boolean;
   onAskAssistant: () => void;
   onEdit: () => void;
 };
@@ -48,6 +49,7 @@ export function MachineProfileSheet({
   maintenanceRecords,
   open,
   onOpenChange,
+  assistantEnabled,
   onAskAssistant,
   onEdit,
 }: MachineProfileSheetProps) {
@@ -258,7 +260,7 @@ export function MachineProfileSheet({
 
         <div className="asset-sheet-actions">
           <div><CheckCircle2 /><span>La decisión final siempre queda en manos del técnico.</span></div>
-          <div className="asset-action-buttons"><Button variant="outline" onClick={onEdit}>Editar datos</Button><Button onClick={onAskAssistant}><Bot data-icon="inline-start" /> Consultar con Mantis IA <Sparkles data-icon="inline-end" /></Button></div>
+          <div className="asset-action-buttons"><Button variant="outline" onClick={onEdit}>Editar datos</Button>{assistantEnabled && <Button onClick={onAskAssistant}><Bot data-icon="inline-start" /> Consultar con Mantis IA <Sparkles data-icon="inline-end" /></Button>}</div>
         </div>
       </SheetContent>
     </Sheet>

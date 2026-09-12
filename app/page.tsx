@@ -60,6 +60,8 @@ const CASES_STORAGE_KEY = 'mantis-ia-rcm-cases-v1';
 const READINGS_STORAGE_KEY = 'mantis-ia-meter-readings-v1';
 const MAINTENANCE_STORAGE_KEY = 'mantis-ia-maintenance-records-v1';
 const LEGACY_PENDING_STANDARD = 'Pendiente de validación con el experto de mantenimiento.';
+// Conservamos el prototipo de asistencia sin exponerlo hasta integrar y validar una IA real.
+const AI_FEATURES_ENABLED = false;
 
 type StoredMachine = Omit<Machine, 'lastServiceHours' | 'maintenanceInterval' | 'manufacturer' | 'model' | 'serialNumber'> & {
   lastServiceHours?: number;
@@ -266,6 +268,7 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    if (!AI_FEATURES_ENABLED) return;
     const context = (document as Document & { modelContext?: WebMcpContext }).modelContext;
     if (!context?.registerTool) return;
     const lifecycle = new AbortController();
@@ -465,7 +468,7 @@ export default function Home() {
       <aside className={`side-rail ${mobileNavOpen ? 'side-rail-open' : ''}`}>
         <div className="brand-lockup">
           <div className="brand-mark" aria-hidden="true"><span>M</span></div>
-          <div><p>Mantis</p><span>Intelligence for maintenance</span></div>
+          <div><p>Mantis</p><span>Gestión visual de mantenimiento</span></div>
         </div>
 
         <nav className="primary-nav" aria-label="Navegación principal">
@@ -494,9 +497,9 @@ export default function Home() {
             </button>
           ))}
           <p className="nav-caption nav-caption-secondary">SISTEMA</p>
-          <button className="nav-item" onClick={() => setAssistantOpen(true)}>
+          {AI_FEATURES_ENABLED && <button className="nav-item" onClick={() => setAssistantOpen(true)}>
             <Bot aria-hidden="true" /><span>Agente IA</span><Sparkles className="nav-spark" aria-hidden="true" />
-          </button>
+          </button>}
           <button hidden data-future-feature="settings" className="nav-item"><Settings aria-hidden="true" /><span>Configuración</span></button>
         </nav>
 
@@ -528,13 +531,13 @@ export default function Home() {
                   <Badge className="hero-status"><Sparkles /> PROTOTIPO ACTIVO</Badge>
                   <h2>El mantenimiento que necesita<br />tu <em>atención.</em></h2>
                   <p>Datos demostrativos para validar el flujo antes de trabajar con información real del laboratorio.</p>
-                  <div className="hero-actions"><Button className="assistant-button" onClick={() => setAssistantOpen(true)}><Sparkles data-icon="inline-start" /> Consultar a Mantis IA</Button><Button variant="ghost" className="hero-case-button" onClick={() => setCaseWorkspaceOpen(true)}><ClipboardCheck data-icon="inline-start" /> Nuevo caso RCM</Button></div>
+                  <div className="hero-actions">{AI_FEATURES_ENABLED && <Button className="assistant-button" onClick={() => setAssistantOpen(true)}><Sparkles data-icon="inline-start" /> Consultar a Mantis IA</Button>}<Button variant="ghost" className="hero-case-button" onClick={() => setCaseWorkspaceOpen(true)}><ClipboardCheck data-icon="inline-start" /> Nuevo caso RCM</Button></div>
                 </div>
-                <div className="live-insight">
+                {AI_FEATURES_ENABLED && <div className="live-insight">
                   <div className="live-insight-icon"><Radio /></div>
                   <div><strong>Análisis de demostración</strong><span>La IA explica; el técnico decide.</span></div>
                   <i aria-label="Sistema disponible" />
-                </div>
+                </div>}
                 <div className="hero-scanline" aria-hidden="true" />
               </section>
 
@@ -551,7 +554,7 @@ export default function Home() {
                         <h3>{machine.name}</h3><p>{machine.id} · {machine.location}</p>
                         <div className="priority-reason"><AlertTriangle aria-hidden="true" /><div><strong>{machine.status === 'Vencida' ? `Mantenimiento vencido por ${machine.hours - getNextServiceAt(machine)} horas` : `Próximo servicio en ${getNextServiceAt(machine) - machine.hours} horas`}</strong><span>{machine.nextTask}</span></div></div>
                         <div className="priority-actions">
-                          <Button className="light-action" onClick={() => { setSelectedId(machine.id); setAssistantOpen(true); }}>Analizar con IA <Sparkles data-icon="inline-end" /></Button>
+                          {AI_FEATURES_ENABLED && <Button className="light-action" onClick={() => { setSelectedId(machine.id); setAssistantOpen(true); }}>Analizar con IA <Sparkles data-icon="inline-end" /></Button>}
                           <Button variant="ghost" className="transparent-action" onClick={() => { setSelectedId(machine.id); setActiveView('machines'); }}>Ver en Máquinas <ChevronRight data-icon="inline-end" /></Button>
                         </div>
                       </div>
@@ -620,6 +623,7 @@ export default function Home() {
         maintenanceRecords={selectedMaintenanceRecords}
         open={assetProfileOpen}
         onOpenChange={setAssetProfileOpen}
+        assistantEnabled={AI_FEATURES_ENABLED}
         onAskAssistant={() => {
           setAssetProfileOpen(false);
           setAssistantOpen(true);
@@ -656,7 +660,7 @@ export default function Home() {
         />
       )}
 
-      <Sheet open={assistantOpen} onOpenChange={setAssistantOpen}>
+      {AI_FEATURES_ENABLED && <Sheet open={assistantOpen} onOpenChange={setAssistantOpen}>
         <SheetContent className="assistant-sheet sm:max-w-[520px]" showCloseButton>
           <SheetHeader className="assistant-head"><div className="assistant-avatar"><Bot /></div><div><div className="assistant-title-row"><SheetTitle>Mantis IA</SheetTitle><Badge className="demo-badge">MODO DEMO</Badge></div><SheetDescription>Asistente de mantenimiento con respuestas trazables.</SheetDescription></div></SheetHeader>
           <div className="assistant-context"><span>CONTEXTO ACTIVO</span><div><Activity /><strong>{selected.name}</strong><small>{selected.id} · {formatHours(selected.hours)} h</small></div></div>
@@ -667,7 +671,7 @@ export default function Home() {
           </div>
           <form className="assistant-composer" onSubmit={askAssistant}><textarea value={prompt} onChange={(event) => setPrompt(event.target.value)} placeholder="Pregúntale sobre esta máquina..." aria-label="Pregunta para Mantis IA" /><div><span><ShieldCheck /> Las acciones requieren confirmación</span><Button type="submit" size="icon" aria-label="Enviar pregunta"><Send /></Button></div></form>
         </SheetContent>
-      </Sheet>
+      </Sheet>}
     </main>
   );
 }
