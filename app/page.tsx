@@ -10,6 +10,7 @@ import {
 
 import { MachineEditorSheet } from '@/components/machine-editor-sheet';
 import { MaintenanceCaseWorkspace } from '@/components/maintenance-case-workspace';
+import { MaintenanceRecordDialog } from '@/components/maintenance-record-dialog';
 import { MachineProfileSheet } from '@/components/machine-profile-sheet';
 import { MeterReadingDialog } from '@/components/meter-reading-dialog';
 import { Badge } from '@/components/ui/badge';
@@ -28,6 +29,7 @@ import {
   type MachineStatus,
 } from '@/lib/machines';
 import type { MaintenanceCase } from '@/lib/maintenance-cases';
+import { formatMaintenanceDate, formatMaintenanceDay, type MaintenanceRecord } from '@/lib/maintenance-records';
 import { formatReadingDate, type MeterReading } from '@/lib/meter-readings';
 
 type WebMcpContext = {
@@ -57,6 +59,7 @@ const navItems = [
 const MACHINES_STORAGE_KEY = 'mantis-ia-assets-v1';
 const CASES_STORAGE_KEY = 'mantis-ia-rcm-cases-v1';
 const READINGS_STORAGE_KEY = 'mantis-ia-meter-readings-v1';
+const MAINTENANCE_STORAGE_KEY = 'mantis-ia-maintenance-records-v1';
 const LEGACY_PENDING_STANDARD = 'Pendiente de validación con el experto de mantenimiento.';
 
 type StoredMachine = Omit<Machine, 'lastServiceHours' | 'maintenanceInterval' | 'manufacturer' | 'model' | 'serialNumber'> & {
@@ -107,8 +110,11 @@ export default function Home() {
   const [casesReady, setCasesReady] = useState(false);
   const [meterReadings, setMeterReadings] = useState<MeterReading[]>([]);
   const [readingsReady, setReadingsReady] = useState(false);
+  const [maintenanceRecords, setMaintenanceRecords] = useState<MaintenanceRecord[]>([]);
+  const [maintenanceReady, setMaintenanceReady] = useState(false);
   const [caseWorkspaceOpen, setCaseWorkspaceOpen] = useState(false);
   const [readingDialogOpen, setReadingDialogOpen] = useState(false);
+  const [maintenanceDialogOpen, setMaintenanceDialogOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [prompt, setPrompt] = useState('');
   const [assistantReply, setAssistantReply] = useState<string | null>(null);
@@ -136,9 +142,22 @@ export default function Home() {
     () => meterReadings.filter((reading) => reading.machineId === selected.id),
     [meterReadings, selected.id],
   );
-  const selectedCases = useMemo(
-    () => maintenanceCases.filter((maintenanceCase) => maintenanceCase.machineId === selected.id),
-    [maintenanceCases, selected.id],
+  const selectedMaintenanceRecords = useMemo(
+    () => maintenanceRecords.filter((record) => record.machineId === selected.id),
+    [maintenanceRecords, selected.id],
+  );
+  const selectedActivityItems = useMemo(() => [
+    ...maintenanceRecords
+      .filter((record) => record.machineId === selected.id)
+      .map((record) => ({ id: record.id, kind: 'maintenance' as const, at: record.performedAt, title: record.completedTask, detail: `${record.maintenanceType} · ${record.technician}` })),
+    ...maintenanceCases
+      .filter((maintenanceCase) => maintenanceCase.machineId === selected.id)
+      .map((maintenanceCase) => ({ id: maintenanceCase.id, kind: 'rcm' as const, at: maintenanceCase.createdAt, title: maintenanceCase.title, detail: `${maintenanceCase.id} · ${maintenanceCase.reviewStatus}` })),
+    ...meterReadings
+      .filter((reading) => reading.machineId === selected.id)
+      .map((reading) => ({ id: reading.id, kind: 'reading' as const, at: reading.recordedAt, title: `${formatHours(reading.currentHours)} h registradas`, detail: reading.responsible })),
+  ].sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime()).slice(0, 3),
+  [maintenanceCases, maintenanceRecords, meterReadings, selected.id],
   );
 
   useEffect(() => {
@@ -208,6 +227,28 @@ export default function Home() {
     if (!readingsReady) return;
     window.localStorage.setItem(READINGS_STORAGE_KEY, JSON.stringify(meterReadings));
   }, [meterReadings, readingsReady]);
+
+  useEffect(() => {
+    const maintenanceTimer = window.setTimeout(() => {
+      const saved = window.localStorage.getItem(MAINTENANCE_STORAGE_KEY);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved) as MaintenanceRecord[];
+          if (Array.isArray(parsed)) setMaintenanceRecords(parsed);
+        } catch {
+          window.localStorage.removeItem(MAINTENANCE_STORAGE_KEY);
+        }
+      }
+      setMaintenanceReady(true);
+    }, 0);
+
+    return () => window.clearTimeout(maintenanceTimer);
+  }, []);
+
+  useEffect(() => {
+    if (!maintenanceReady) return;
+    window.localStorage.setItem(MAINTENANCE_STORAGE_KEY, JSON.stringify(maintenanceRecords));
+  }, [maintenanceReady, maintenanceRecords]);
 
   useEffect(() => {
     const context = (document as Document & { modelContext?: WebMcpContext }).modelContext;
@@ -297,6 +338,24 @@ export default function Home() {
     window.setTimeout(() => setNotice(null), 2600);
   }
 
+  function saveMaintenanceRecord(record: MaintenanceRecord) {
+    setMachines((current) => current.map((machine) => {
+      if (machine.id !== record.machineId || !record.resetsPreventivePlan) return machine;
+      return {
+        ...machine,
+        lastServiceHours: record.serviceHours,
+        lastService: formatMaintenanceDay(record.performedAt),
+        status: calculateMachineStatus(machine.hours, record.serviceHours, machine.maintenanceInterval),
+      };
+    }));
+    setMaintenanceRecords((current) => [record, ...current]);
+    setMaintenanceDialogOpen(false);
+    setNotice(record.resetsPreventivePlan
+      ? `Mantenimiento guardado y ciclo preventivo actualizado en ${record.machineId}`
+      : `Mantenimiento guardado sin modificar el ciclo de ${record.machineId}`);
+    window.setTimeout(() => setNotice(null), 3200);
+  }
+
   function openEditor(mode: 'create' | 'edit') {
     setEditorMode(mode);
     setAssetProfileOpen(false);
@@ -364,13 +423,12 @@ export default function Home() {
         <div className={`service-state-banner ${selectedServiceIsDue ? 'overdue' : 'upcoming'}`}>{selectedServiceIsDue ? <AlertTriangle /> : <Clock3 />}<div><span>{selectedServiceDelta < 0 ? 'MANTENIMIENTO VENCIDO' : selectedServiceDelta === 0 ? 'MANTENIMIENTO REQUERIDO' : 'SERVICIO PROGRAMADO'}</span><strong>{selectedServiceDelta < 0 ? `${formatHours(Math.abs(selectedServiceDelta))} h vencidas` : selectedServiceDelta === 0 ? 'Debe realizarse ahora' : `${formatHours(selectedServiceDelta)} h restantes`}</strong><small>{selectedServiceIsDue ? `Venció a las ${formatHours(selectedNextServiceAt)} h` : `Programado a las ${formatHours(selectedNextServiceAt)} h`}</small></div></div>
         <div className="detail-stats detail-stats-four"><div><span>HORAS ACTUALES</span><strong>{formatHours(selected.hours)} h</strong></div><div><span>ÚLTIMO SERVICIO</span><strong>{formatHours(selected.lastServiceHours)} h</strong></div><div><span>INTERVALO</span><strong>{formatHours(selected.maintenanceInterval)} h</strong></div><div className={selectedServiceIsDue ? 'service-deadline-expired' : ''}><span>{selectedServiceIsDue ? 'VENCIÓ A LAS' : 'PRÓXIMO SERVICIO'}</span><strong>{formatHours(selectedNextServiceAt)} h</strong></div></div>
         <div className="next-task"><div className="task-heading"><span>{selectedServiceIsDue ? 'TAREA PENDIENTE' : 'PRÓXIMA TAREA'}</span><Badge variant="outline">Preventivo</Badge></div><strong>{selected.nextTask}</strong><p>{selectedServiceDelta < 0 ? `Debió ejecutarse a las ${formatHours(selectedNextServiceAt)} h y acumula ${formatHours(Math.abs(selectedServiceDelta))} h de retraso.` : selectedServiceDelta === 0 ? `Debe ejecutarse ahora, al alcanzar las ${formatHours(selectedNextServiceAt)} h.` : `Programada para las ${formatHours(selectedNextServiceAt)} h. Último servicio: ${selected.lastService}.`}</p><div className="task-progress"><span style={{ width: `${getServiceProgress(selected)}%` }} /></div></div>
-        <div className="detail-actions"><Button onClick={() => setReadingDialogOpen(true)}><Plus data-icon="inline-start" /> Lectura</Button><Button variant="outline" onClick={() => openEditor('edit')}><Pencil data-icon="inline-start" /> Editar</Button><Button variant="outline" onClick={() => setCaseWorkspaceOpen(true)}><ClipboardCheck data-icon="inline-start" /> Caso RCM</Button></div>
+        <div className="detail-actions detail-actions-four"><Button onClick={() => setReadingDialogOpen(true)}><Plus data-icon="inline-start" /> Lectura</Button><Button className="maintenance-record-action" onClick={() => setMaintenanceDialogOpen(true)}><Wrench data-icon="inline-start" /> Servicio</Button><Button variant="outline" onClick={() => openEditor('edit')}><Pencil data-icon="inline-start" /> Editar</Button><Button variant="outline" onClick={() => setCaseWorkspaceOpen(true)}><ClipboardCheck data-icon="inline-start" /> Caso RCM</Button></div>
       </article>
       <article className="activity-card">
-        <div className="section-head compact"><div><h3>Actividad reciente</h3><p>Trazabilidad del laboratorio</p></div><button>Ver todo</button></div>
-        {selectedCases[0] && <div className="activity-item"><span className="activity-dot violet"><ClipboardCheck /></span><div><strong>{selectedCases[0].title}</strong><p>{selectedCases[0].id} · {selectedCases[0].reviewStatus}</p></div></div>}
-        {selectedReadings.slice(0, 2).map((reading) => <div className="activity-item" key={reading.id}><span className="activity-dot warning"><Clock3 /></span><div><strong>{formatHours(reading.currentHours)} h registradas</strong><p>{reading.responsible} · {formatReadingDate(reading.recordedAt)}</p></div></div>)}
-        {!selectedCases[0] && selectedReadings.length === 0 && <div className="activity-empty"><Clock3 /><strong>Sin actividad registrada</strong><span>Las lecturas y casos RCM de esta máquina aparecerán aquí.</span></div>}
+        <div className="section-head compact"><div><h3>Actividad reciente</h3><p>Trazabilidad de esta máquina</p></div><button onClick={() => setAssetProfileOpen(true)}>Abrir ficha</button></div>
+        {selectedActivityItems.map((item) => <div className="activity-item" key={`${item.kind}-${item.id}`}><span className={`activity-dot ${item.kind === 'maintenance' ? 'success' : item.kind === 'rcm' ? 'violet' : 'warning'}`}>{item.kind === 'maintenance' ? <Wrench /> : item.kind === 'rcm' ? <ClipboardCheck /> : <Clock3 />}</span><div><strong>{item.title}</strong><p>{item.detail} · {item.kind === 'maintenance' ? formatMaintenanceDate(item.at) : item.kind === 'reading' ? formatReadingDate(item.at) : formatMaintenanceDate(item.at)}</p></div></div>)}
+        {selectedActivityItems.length === 0 && <div className="activity-empty"><Clock3 /><strong>Sin actividad registrada</strong><span>Las lecturas, intervenciones y casos RCM de esta máquina aparecerán aquí.</span></div>}
       </article>
     </aside>
   );
@@ -392,7 +450,10 @@ export default function Home() {
               aria-current={id && activeView === id ? 'page' : undefined}
               onClick={() => {
                 if (id) setActiveView(id);
-                if (label === 'Mantenimiento') setCaseWorkspaceOpen(true);
+                if (label === 'Mantenimiento') {
+                  setActiveView('machines');
+                  setMaintenanceDialogOpen(true);
+                }
                 setMobileNavOpen(false);
               }}
             >
@@ -524,6 +585,7 @@ export default function Home() {
       <MachineProfileSheet
         machine={selected}
         readings={selectedReadings}
+        maintenanceRecords={selectedMaintenanceRecords}
         open={assetProfileOpen}
         onOpenChange={setAssetProfileOpen}
         onAskAssistant={() => {
@@ -539,6 +601,15 @@ export default function Home() {
           open
           onOpenChange={setReadingDialogOpen}
           onSave={saveMeterReading}
+        />
+      )}
+
+      {maintenanceDialogOpen && (
+        <MaintenanceRecordDialog
+          machine={selected}
+          open
+          onOpenChange={setMaintenanceDialogOpen}
+          onSave={saveMaintenanceRecord}
         />
       )}
 

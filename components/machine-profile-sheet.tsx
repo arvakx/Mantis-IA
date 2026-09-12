@@ -13,6 +13,7 @@ import {
   Gauge,
   Hash,
   MapPin,
+  RotateCcw,
   ShieldCheck,
   Sparkles,
   Wrench,
@@ -28,11 +29,13 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { formatHours, getNextServiceAt, getServiceProgress, type Machine, statusStyles } from '@/lib/machines';
+import { formatMaintenanceDate, type MaintenanceRecord } from '@/lib/maintenance-records';
 import { formatReadingDate, type MeterReading } from '@/lib/meter-readings';
 
 type MachineProfileSheetProps = {
   machine: Machine;
   readings: MeterReading[];
+  maintenanceRecords: MaintenanceRecord[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onAskAssistant: () => void;
@@ -42,6 +45,7 @@ type MachineProfileSheetProps = {
 export function MachineProfileSheet({
   machine,
   readings,
+  maintenanceRecords,
   open,
   onOpenChange,
   onAskAssistant,
@@ -55,6 +59,7 @@ export function MachineProfileSheet({
     : machine.dataStatus === 'Demostrativo' ? 'demo' : 'pending';
   const technicalIdentityComplete = Boolean(machine.manufacturer && machine.model);
   const latestReading = readings[0];
+  const latestMaintenance = maintenanceRecords[0];
   const readingEvidenceState = !latestReading
     ? 'pending'
     : latestReading.dataStatus === 'Validado' ? 'ready' : latestReading.dataStatus === 'Demostrativo' ? 'demo' : 'draft';
@@ -68,6 +73,7 @@ export function MachineProfileSheet({
     },
     { label: 'Plan preventivo', detail: 'Intervalo y tarea listos para revisión técnica', state: machine.dataStatus === 'Validado' ? 'ready' : 'draft' },
     { label: 'Manual técnico', detail: 'Pendiente de cargar y referenciar', state: 'pending' },
+    { label: 'Historial de mantenimiento', detail: latestMaintenance ? `${maintenanceRecords.length} intervención${maintenanceRecords.length === 1 ? '' : 'es'} · Última: ${formatMaintenanceDate(latestMaintenance.performedAt)}` : 'Aún no hay intervenciones ejecutadas', state: latestMaintenance ? latestMaintenance.dataStatus === 'Validado' ? 'ready' : latestMaintenance.dataStatus === 'Demostrativo' ? 'demo' : 'draft' : 'pending' },
     { label: 'Historial de lecturas', detail: latestReading ? `${readings.length} registro${readings.length === 1 ? '' : 's'} · Último: ${formatReadingDate(latestReading.recordedAt)}` : 'Aún no hay lecturas trazables', state: readingEvidenceState },
     { label: 'Análisis RCM', detail: 'Pendiente de funciones y modos de falla validados', state: 'pending' },
   ] as const;
@@ -168,7 +174,35 @@ export function MachineProfileSheet({
 
           <section className="asset-section">
             <div className="asset-section-title">
-              <div><span>04</span><h3>Historial del horómetro</h3></div>
+              <div><span>04</span><h3>Historial de mantenimiento</h3></div>
+              <p>Intervenciones ejecutadas y su efecto documentado sobre el plan preventivo.</p>
+            </div>
+            {maintenanceRecords.length > 0 ? (
+              <div className="maintenance-history-list">
+                {maintenanceRecords.slice(0, 5).map((record) => {
+                  const recordState = record.dataStatus === 'Validado' ? 'ready' : record.dataStatus === 'Demostrativo' ? 'demo' : 'pending';
+                  return (
+                    <article className="maintenance-history-row" key={record.id}>
+                      <div className="maintenance-history-icon"><Wrench /></div>
+                      <div className="maintenance-history-copy">
+                        <div><Badge variant="outline">{record.maintenanceType}</Badge><strong>{record.completedTask}</strong></div>
+                        <p>{formatMaintenanceDate(record.performedAt)} · {record.technician} · {formatHours(record.serviceHours)} h</p>
+                        <small>{record.workSummary}</small>
+                        <span>Fuente: {record.source}{record.partsUsed ? ` · Repuestos: ${record.partsUsed}` : ''}</span>
+                      </div>
+                      <div className="maintenance-history-states"><Badge className={`asset-demo-badge data-${recordState}`}>{record.dataStatus.toUpperCase()}</Badge><span className={record.resetsPreventivePlan ? 'cycle-reset' : 'cycle-unchanged'}><RotateCcw /> {record.resetsPreventivePlan ? 'CICLO REINICIADO' : 'CICLO SIN CAMBIOS'}</span></div>
+                    </article>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="reading-history-empty"><Wrench /><div><strong>Sin mantenimientos registrados</strong><span>La primera intervención aparecerá aquí con su técnico, evidencia y efecto sobre el plan.</span></div></div>
+            )}
+          </section>
+
+          <section className="asset-section">
+            <div className="asset-section-title">
+              <div><span>05</span><h3>Historial del horómetro</h3></div>
               <p>Cada cambio conserva quién lo registró, cuándo y con qué fuente.</p>
             </div>
             {readings.length > 0 ? (
@@ -195,7 +229,7 @@ export function MachineProfileSheet({
 
           <section className="asset-section">
             <div className="asset-section-title">
-              <div><span>05</span><h3>Calidad de la evidencia</h3></div>
+              <div><span>06</span><h3>Calidad de la evidencia</h3></div>
               <p>Mantis muestra qué información es confiable y qué falta validar.</p>
             </div>
             <div className="evidence-list">

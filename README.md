@@ -43,6 +43,9 @@ La versión actual incluye:
 - Persistencia local de máquinas y lecturas para conservar el trabajo al recargar el navegador.
 - Registro trazable del horómetro con valor anterior, nueva lectura total, diferencia calculada, fecha, responsable, fuente, observación y estado de validación.
 - Historial local de lecturas por máquina y recálculo automático del estado preventivo después de cada actualización.
+- Registro de mantenimientos ejecutados con tipo de intervención, fecha, horómetro, técnico, tarea, trabajo realizado, repuestos, hallazgos, fuente y validez del dato.
+- Reinicio explícito y controlado del ciclo preventivo: una intervención correctiva o una inspección no alteran automáticamente el próximo servicio.
+- Historial de mantenimiento por activo y actividad reciente ordenada cronológicamente a partir de registros reales del prototipo.
 - Casos de mantenimiento guiados por la cadena RCM: función, falla funcional, modo, causa, efecto, consecuencia, política, intervalo y fuente.
 - Puerta de calidad que separa completitud documental, preparación para revisión y validación por un experto identificado.
 - Panel demostrativo del agente Mantis IA.
