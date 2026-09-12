@@ -11,6 +11,7 @@ import {
 import { MachineEditorSheet } from '@/components/machine-editor-sheet';
 import { MaintenanceCaseWorkspace } from '@/components/maintenance-case-workspace';
 import { MachineProfileSheet } from '@/components/machine-profile-sheet';
+import { MeterReadingDialog } from '@/components/meter-reading-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -27,6 +28,7 @@ import {
   type MachineStatus,
 } from '@/lib/machines';
 import type { MaintenanceCase } from '@/lib/maintenance-cases';
+import { formatReadingDate, type MeterReading } from '@/lib/meter-readings';
 
 type WebMcpContext = {
   registerTool: (
@@ -54,11 +56,15 @@ const navItems = [
 
 const MACHINES_STORAGE_KEY = 'mantis-ia-assets-v1';
 const CASES_STORAGE_KEY = 'mantis-ia-rcm-cases-v1';
+const READINGS_STORAGE_KEY = 'mantis-ia-meter-readings-v1';
 const LEGACY_PENDING_STANDARD = 'Pendiente de validación con el experto de mantenimiento.';
 
-type StoredMachine = Omit<Machine, 'lastServiceHours' | 'maintenanceInterval'> & {
+type StoredMachine = Omit<Machine, 'lastServiceHours' | 'maintenanceInterval' | 'manufacturer' | 'model' | 'serialNumber'> & {
   lastServiceHours?: number;
   maintenanceInterval?: number;
+  manufacturer?: string;
+  model?: string;
+  serialNumber?: string;
   dueAt?: number;
 };
 
@@ -76,6 +82,9 @@ function migrateStoredMachine(machine: StoredMachine): Machine {
 
   return {
     ...migrated,
+    manufacturer: typeof machine.manufacturer === 'string' ? machine.manufacturer : '',
+    model: typeof machine.model === 'string' ? machine.model : '',
+    serialNumber: typeof machine.serialNumber === 'string' ? machine.serialNumber : '',
     lastServiceHours,
     maintenanceInterval,
     status: calculateMachineStatus(machine.hours, lastServiceHours, maintenanceInterval),
@@ -96,7 +105,10 @@ export default function Home() {
   const [storageReady, setStorageReady] = useState(false);
   const [maintenanceCases, setMaintenanceCases] = useState<MaintenanceCase[]>([]);
   const [casesReady, setCasesReady] = useState(false);
+  const [meterReadings, setMeterReadings] = useState<MeterReading[]>([]);
+  const [readingsReady, setReadingsReady] = useState(false);
   const [caseWorkspaceOpen, setCaseWorkspaceOpen] = useState(false);
+  const [readingDialogOpen, setReadingDialogOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [prompt, setPrompt] = useState('');
   const [assistantReply, setAssistantReply] = useState<string | null>(null);
@@ -108,7 +120,7 @@ export default function Home() {
     const normalizedQuery = searchQuery.trim().toLocaleLowerCase('es');
     return machines.filter((machine) => {
       const matchesStatus = filter === 'Todas' || machine.status === filter;
-      const searchableText = `${machine.id} ${machine.name} ${machine.type} ${machine.location}`.toLocaleLowerCase('es');
+      const searchableText = `${machine.id} ${machine.name} ${machine.type} ${machine.manufacturer} ${machine.model} ${machine.serialNumber} ${machine.location}`.toLocaleLowerCase('es');
       return matchesStatus && (!normalizedQuery || searchableText.includes(normalizedQuery));
     });
   }, [filter, machines, searchQuery]);
@@ -120,6 +132,14 @@ export default function Home() {
       return rank[a.status] - rank[b.status] || (getNextServiceAt(a) - a.hours) - (getNextServiceAt(b) - b.hours);
     })
     .slice(0, 3), [machines]);
+  const selectedReadings = useMemo(
+    () => meterReadings.filter((reading) => reading.machineId === selected.id),
+    [meterReadings, selected.id],
+  );
+  const selectedCases = useMemo(
+    () => maintenanceCases.filter((maintenanceCase) => maintenanceCase.machineId === selected.id),
+    [maintenanceCases, selected.id],
+  );
 
   useEffect(() => {
     const storageTimer = window.setTimeout(() => {
@@ -166,6 +186,28 @@ export default function Home() {
     if (!casesReady) return;
     window.localStorage.setItem(CASES_STORAGE_KEY, JSON.stringify(maintenanceCases));
   }, [casesReady, maintenanceCases]);
+
+  useEffect(() => {
+    const readingsTimer = window.setTimeout(() => {
+      const saved = window.localStorage.getItem(READINGS_STORAGE_KEY);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved) as MeterReading[];
+          if (Array.isArray(parsed)) setMeterReadings(parsed);
+        } catch {
+          window.localStorage.removeItem(READINGS_STORAGE_KEY);
+        }
+      }
+      setReadingsReady(true);
+    }, 0);
+
+    return () => window.clearTimeout(readingsTimer);
+  }, []);
+
+  useEffect(() => {
+    if (!readingsReady) return;
+    window.localStorage.setItem(READINGS_STORAGE_KEY, JSON.stringify(meterReadings));
+  }, [meterReadings, readingsReady]);
 
   useEffect(() => {
     const context = (document as Document & { modelContext?: WebMcpContext }).modelContext;
@@ -217,6 +259,18 @@ export default function Home() {
           const hours = item.hours + additionalHours;
           return { ...item, hours, status: calculateMachineStatus(hours, item.lastServiceHours, item.maintenanceInterval) };
         }));
+        setMeterReadings((current) => [{
+          id: typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `reading-${Date.now()}`,
+          machineId,
+          previousHours: machine.hours,
+          currentHours: machine.hours + additionalHours,
+          addedHours: additionalHours,
+          recordedAt: new Date().toISOString(),
+          responsible: 'Registro mediante Mantis IA',
+          source: 'Actualización solicitada mediante herramienta local',
+          note: 'Pendiente de confirmación contra el horómetro físico.',
+          dataStatus: 'Pendiente de validación',
+        }, ...current]);
         setSelectedId(machineId);
         setNotice(`Lectura registrada: +${additionalHours} h en ${machineId}`);
         window.setTimeout(() => setNotice(null), 2600);
@@ -227,13 +281,19 @@ export default function Home() {
     return () => lifecycle.abort();
   }, [machines]);
 
-  function registerReading() {
-    setMachines((current) => current.map((machine) => {
-      if (machine.id !== selected.id) return machine;
-      const hours = machine.hours + 8;
-      return { ...machine, hours, status: calculateMachineStatus(hours, machine.lastServiceHours, machine.maintenanceInterval) };
-    }));
-    setNotice(`Lectura registrada: +8 h en ${selected.id}`);
+  function saveMeterReading(reading: MeterReading) {
+    setMachines((current) => current.map((machine) => machine.id === reading.machineId
+      ? {
+          ...machine,
+          hours: reading.currentHours,
+          status: calculateMachineStatus(reading.currentHours, machine.lastServiceHours, machine.maintenanceInterval),
+        }
+      : machine));
+    setMeterReadings((current) => [reading, ...current]);
+    setReadingDialogOpen(false);
+    setNotice(reading.addedHours > 0
+      ? `Lectura guardada: +${formatHours(reading.addedHours)} h en ${reading.machineId}`
+      : `Lectura de ${reading.machineId} confirmada sin aumento`);
     window.setTimeout(() => setNotice(null), 2600);
   }
 
@@ -299,17 +359,18 @@ export default function Home() {
   const machineDetailColumn = (
     <aside className="detail-column">
       <article className={`machine-detail ${selectedServiceIsDue ? 'machine-detail-overdue' : ''}`}>
-        <div className="detail-head"><div className="asset-code"><ScanLine /></div><div><p>{selected.id}</p><h3>{selected.name}</h3><span>{selected.type}</span></div><button aria-label="Abrir ficha completa" onClick={() => setAssetProfileOpen(true)}><ArrowUpRight /></button></div>
+        <div className="detail-head"><div className="asset-code"><ScanLine /></div><div><p>{selected.id}</p><h3>{selected.name}</h3><span>{selected.manufacturer || selected.model ? `${selected.manufacturer}${selected.manufacturer && selected.model ? ' · ' : ''}${selected.model}` : selected.type}</span></div><button aria-label="Abrir ficha completa" onClick={() => setAssetProfileOpen(true)}><ArrowUpRight /></button></div>
         <div className="detail-score"><div className="score-ring" style={{ '--score': `${selected.health}%` } as React.CSSProperties}><span>{selected.health}</span></div><div><p>Índice de condición</p><strong>{selected.health < 70 ? 'Requiere atención' : selected.health < 86 ? 'Condición vigilada' : 'Condición estable'}</strong><span>Calculado con reglas del plan</span></div></div>
         <div className={`service-state-banner ${selectedServiceIsDue ? 'overdue' : 'upcoming'}`}>{selectedServiceIsDue ? <AlertTriangle /> : <Clock3 />}<div><span>{selectedServiceDelta < 0 ? 'MANTENIMIENTO VENCIDO' : selectedServiceDelta === 0 ? 'MANTENIMIENTO REQUERIDO' : 'SERVICIO PROGRAMADO'}</span><strong>{selectedServiceDelta < 0 ? `${formatHours(Math.abs(selectedServiceDelta))} h vencidas` : selectedServiceDelta === 0 ? 'Debe realizarse ahora' : `${formatHours(selectedServiceDelta)} h restantes`}</strong><small>{selectedServiceIsDue ? `Venció a las ${formatHours(selectedNextServiceAt)} h` : `Programado a las ${formatHours(selectedNextServiceAt)} h`}</small></div></div>
         <div className="detail-stats detail-stats-four"><div><span>HORAS ACTUALES</span><strong>{formatHours(selected.hours)} h</strong></div><div><span>ÚLTIMO SERVICIO</span><strong>{formatHours(selected.lastServiceHours)} h</strong></div><div><span>INTERVALO</span><strong>{formatHours(selected.maintenanceInterval)} h</strong></div><div className={selectedServiceIsDue ? 'service-deadline-expired' : ''}><span>{selectedServiceIsDue ? 'VENCIÓ A LAS' : 'PRÓXIMO SERVICIO'}</span><strong>{formatHours(selectedNextServiceAt)} h</strong></div></div>
         <div className="next-task"><div className="task-heading"><span>{selectedServiceIsDue ? 'TAREA PENDIENTE' : 'PRÓXIMA TAREA'}</span><Badge variant="outline">Preventivo</Badge></div><strong>{selected.nextTask}</strong><p>{selectedServiceDelta < 0 ? `Debió ejecutarse a las ${formatHours(selectedNextServiceAt)} h y acumula ${formatHours(Math.abs(selectedServiceDelta))} h de retraso.` : selectedServiceDelta === 0 ? `Debe ejecutarse ahora, al alcanzar las ${formatHours(selectedNextServiceAt)} h.` : `Programada para las ${formatHours(selectedNextServiceAt)} h. Último servicio: ${selected.lastService}.`}</p><div className="task-progress"><span style={{ width: `${getServiceProgress(selected)}%` }} /></div></div>
-        <div className="detail-actions"><Button onClick={registerReading}><Plus data-icon="inline-start" /> Lectura</Button><Button variant="outline" onClick={() => openEditor('edit')}><Pencil data-icon="inline-start" /> Editar</Button><Button variant="outline" onClick={() => setCaseWorkspaceOpen(true)}><ClipboardCheck data-icon="inline-start" /> Caso RCM</Button></div>
+        <div className="detail-actions"><Button onClick={() => setReadingDialogOpen(true)}><Plus data-icon="inline-start" /> Lectura</Button><Button variant="outline" onClick={() => openEditor('edit')}><Pencil data-icon="inline-start" /> Editar</Button><Button variant="outline" onClick={() => setCaseWorkspaceOpen(true)}><ClipboardCheck data-icon="inline-start" /> Caso RCM</Button></div>
       </article>
       <article className="activity-card">
         <div className="section-head compact"><div><h3>Actividad reciente</h3><p>Trazabilidad del laboratorio</p></div><button>Ver todo</button></div>
-        {maintenanceCases[0] ? <div className="activity-item"><span className="activity-dot violet"><ClipboardCheck /></span><div><strong>{maintenanceCases[0].title}</strong><p>{maintenanceCases[0].id} · {maintenanceCases[0].reviewStatus}</p></div></div> : <div className="activity-item"><span className="activity-dot success"><CheckCircle2 /></span><div><strong>Inspección completada</strong><p>Bomba centrífuga · hace 2 h</p></div></div>}
-        <div className="activity-item"><span className="activity-dot warning"><Clock3 /></span><div><strong>Lectura actualizada</strong><p>Torno paralelo · ayer</p></div></div>
+        {selectedCases[0] && <div className="activity-item"><span className="activity-dot violet"><ClipboardCheck /></span><div><strong>{selectedCases[0].title}</strong><p>{selectedCases[0].id} · {selectedCases[0].reviewStatus}</p></div></div>}
+        {selectedReadings.slice(0, 2).map((reading) => <div className="activity-item" key={reading.id}><span className="activity-dot warning"><Clock3 /></span><div><strong>{formatHours(reading.currentHours)} h registradas</strong><p>{reading.responsible} · {formatReadingDate(reading.recordedAt)}</p></div></div>)}
+        {!selectedCases[0] && selectedReadings.length === 0 && <div className="activity-empty"><Clock3 /><strong>Sin actividad registrada</strong><span>Las lecturas y casos RCM de esta máquina aparecerán aquí.</span></div>}
       </article>
     </aside>
   );
@@ -435,7 +496,7 @@ export default function Home() {
                   <div className="section-head inventory-section-head">
                     <div><h3>Inventario completo</h3><p>{filteredMachines.length} de {machines.length} activos visibles</p></div>
                     <div className="inventory-controls">
-                      <div className="search-shell inventory-search"><Search aria-hidden="true" /><input aria-label="Buscar en el inventario de máquinas" placeholder="Buscar máquina, código o ubicación..." value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} /><kbd>⌘ K</kbd></div>
+                      <div className="search-shell inventory-search"><Search aria-hidden="true" /><input aria-label="Buscar en el inventario de máquinas" placeholder="Buscar máquina, código, modelo o serie..." value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} /><kbd>⌘ K</kbd></div>
                       <div className="filter-pills" aria-label="Filtrar máquinas">
                         {(['Todas', 'Operativa', 'Atención próxima', 'Vencida'] as const).map((item) => (
                           <button key={item} className={filter === item ? 'active' : ''} onClick={() => setFilter(item)}>{item === 'Todas' ? 'Todas' : item === 'Operativa' ? 'Operativas' : item}</button>
@@ -462,6 +523,7 @@ export default function Home() {
 
       <MachineProfileSheet
         machine={selected}
+        readings={selectedReadings}
         open={assetProfileOpen}
         onOpenChange={setAssetProfileOpen}
         onAskAssistant={() => {
@@ -470,6 +532,15 @@ export default function Home() {
         }}
         onEdit={() => openEditor('edit')}
       />
+
+      {readingDialogOpen && (
+        <MeterReadingDialog
+          machine={selected}
+          open
+          onOpenChange={setReadingDialogOpen}
+          onSave={saveMeterReading}
+        />
+      )}
 
       {editorOpen && (
         <MachineEditorSheet

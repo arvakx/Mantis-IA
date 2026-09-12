@@ -5,6 +5,9 @@ export type Machine = {
   id: string;
   name: string;
   type: string;
+  manufacturer: string;
+  model: string;
+  serialNumber: string;
   location: string;
   hours: number;
   lastServiceHours: number;
@@ -25,6 +28,9 @@ export const initialMachines: Machine[] = [
     id: 'COMP-01',
     name: 'Compresor principal',
     type: 'Compresor de tornillo',
+    manufacturer: '',
+    model: '',
+    serialNumber: '',
     location: 'Zona neumática',
     hours: 2547,
     lastServiceHours: 2000,
@@ -43,6 +49,9 @@ export const initialMachines: Machine[] = [
     id: 'TAL-02',
     name: 'Taladro de banco',
     type: 'Taladro de columna',
+    manufacturer: '',
+    model: '',
+    serialNumber: '',
     location: 'Banco 02',
     hours: 1035,
     lastServiceHours: 600,
@@ -61,6 +70,9 @@ export const initialMachines: Machine[] = [
     id: 'TOR-03',
     name: 'Torno paralelo',
     type: 'Máquina herramienta',
+    manufacturer: '',
+    model: '',
+    serialNumber: '',
     location: 'Celda de mecanizado',
     hours: 1870,
     lastServiceHours: 1000,
@@ -79,6 +91,9 @@ export const initialMachines: Machine[] = [
     id: 'BOM-01',
     name: 'Bomba centrífuga',
     type: 'Equipo hidráulico',
+    manufacturer: '',
+    model: '',
+    serialNumber: '',
     location: 'Banco hidráulico',
     hours: 724,
     lastServiceHours: 500,
@@ -97,6 +112,9 @@ export const initialMachines: Machine[] = [
     id: 'ESM-01',
     name: 'Esmeriladora',
     type: 'Equipo rotativo',
+    manufacturer: '',
+    model: '',
+    serialNumber: '',
     location: 'Banco 04',
     hours: 390,
     lastServiceHours: 0,

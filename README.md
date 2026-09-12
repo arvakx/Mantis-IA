@@ -28,19 +28,21 @@ La versión actual incluye:
 
 - Entrada directa al prototipo para evitar que el acceso distraiga las pruebas científicas.
 - Tablero operativo responsivo con lenguaje visual de cabina industrial, métricas gráficas y tres tarjetas visuales de prioridad.
-- Vista independiente de Máquinas con inventario completo, búsqueda, filtros, selección, detalle contextual y acceso al registro de activos.
+- Vista independiente de Máquinas con inventario completo, búsqueda por código, nombre, fabricante, modelo o serie, filtros, selección, detalle contextual y acceso al registro de activos.
 - Escena industrial original para contextualizar el laboratorio sin representar una máquina real de la USTA.
 - Cinco máquinas de demostración con estados y prioridades.
 - Filtros y ficha central del activo con función, contexto operativo, condición y plan preventivo.
 - Estado visible de la evidencia: datos demostrativos, borradores y campos aún por validar durante el experimento o mediante revisión experta.
 - Campos científicos sin respuestas precargadas: los estándares pendientes permanecen vacíos y claramente señalados hasta su validación.
-- Registro y edición de activos con los campos mínimos de identificación, operación, RCM, plan preventivo y fuente.
+- Registro y edición de activos con identidad técnica de placa —fabricante, modelo y número de serie—, operación, RCM, plan preventivo y fuente.
+- Validación protegida: un activo no puede marcarse como validado sin fabricante, modelo, estándar de desempeño y fuente verificable; el número de serie se conserva como opcional cuando no está disponible.
 - Modelo de contador trazable: horas actuales, horas del último servicio, intervalo preventivo y próximo servicio calculado automáticamente.
 - Estados operativos calculados con el intervalo real y un umbral de atención del 15% antes del próximo servicio.
 - Ficha contextual que distingue visualmente entre horas restantes y mantenimiento vencido, mostrando el punto de servicio y el retraso exacto.
 - Registro de activos en una superficie completa, legible y adaptable a computador o móvil.
 - Persistencia local de máquinas y lecturas para conservar el trabajo al recargar el navegador.
-- Registro local de lecturas de horas.
+- Registro trazable del horómetro con valor anterior, nueva lectura total, diferencia calculada, fecha, responsable, fuente, observación y estado de validación.
+- Historial local de lecturas por máquina y recálculo automático del estado preventivo después de cada actualización.
 - Casos de mantenimiento guiados por la cadena RCM: función, falla funcional, modo, causa, efecto, consecuencia, política, intervalo y fuente.
 - Puerta de calidad que separa completitud documental, preparación para revisión y validación por un experto identificado.
 - Panel demostrativo del agente Mantis IA.

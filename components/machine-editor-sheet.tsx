@@ -7,7 +7,9 @@ import {
   CheckCircle2,
   ClipboardCheck,
   Database,
+  Factory,
   Gauge,
+  Hash,
   MapPin,
   Save,
   ShieldCheck,
@@ -52,6 +54,9 @@ type FormState = {
   id: string;
   name: string;
   type: string;
+  manufacturer: string;
+  model: string;
+  serialNumber: string;
   location: string;
   hours: string;
   lastServiceHours: string;
@@ -69,6 +74,9 @@ const blankForm: FormState = {
   id: '',
   name: '',
   type: '',
+  manufacturer: '',
+  model: '',
+  serialNumber: '',
   location: '',
   hours: '0',
   lastServiceHours: '0',
@@ -87,6 +95,9 @@ function machineToForm(machine: Machine): FormState {
     id: machine.id,
     name: machine.name,
     type: machine.type,
+    manufacturer: machine.manufacturer,
+    model: machine.model,
+    serialNumber: machine.serialNumber,
     location: machine.location,
     hours: String(machine.hours),
     lastServiceHours: String(machine.lastServiceHours),
@@ -150,8 +161,8 @@ export function MachineEditorSheet({
       setError(`Ya existe un activo con el código ${id}.`);
       return;
     }
-    if (form.dataStatus === 'Validado' && (!form.source.trim() || !form.performanceStandard.trim())) {
-      setError('Para marcar el activo como validado necesitas una fuente verificable y un estándar de desempeño confirmado durante el experimento o por el experto.');
+    if (form.dataStatus === 'Validado' && (!form.manufacturer.trim() || !form.model.trim() || !form.source.trim() || !form.performanceStandard.trim())) {
+      setError('Para marcar el activo como validado necesitas fabricante, modelo, una fuente verificable y un estándar de desempeño confirmado durante el experimento o por el experto.');
       return;
     }
 
@@ -162,6 +173,9 @@ export function MachineEditorSheet({
       id,
       name: form.name.trim(),
       type: form.type.trim(),
+      manufacturer: form.manufacturer.trim(),
+      model: form.model.trim(),
+      serialNumber: form.serialNumber.trim(),
       location: form.location.trim(),
       hours,
       lastServiceHours,
@@ -202,6 +216,9 @@ export function MachineEditorSheet({
                 <label className="form-field form-span-two" htmlFor="asset-name"><span><Activity /> Nombre de la máquina</span><Input id="asset-name" value={form.name} onChange={(event) => update('name', event.target.value)} placeholder="Ej. Torno paralelo" /></label>
                 <label className="form-field" htmlFor="asset-location"><span><MapPin /> Ubicación</span><Input id="asset-location" value={form.location} onChange={(event) => update('location', event.target.value)} placeholder="Ej. Celda 02" /></label>
                 <label className="form-field form-span-two" htmlFor="asset-type"><span><Gauge /> Tipo de equipo</span><Input id="asset-type" value={form.type} onChange={(event) => update('type', event.target.value)} placeholder="Ej. Máquina herramienta" /></label>
+                <label className="form-field validation-required" htmlFor="asset-manufacturer"><span><Factory /> Fabricante o marca <em>VALIDAR</em></span><Input id="asset-manufacturer" value={form.manufacturer} onChange={(event) => update('manufacturer', event.target.value)} placeholder="Ej. Siemens" /><small>Copiar exactamente desde la placa o el manual técnico.</small></label>
+                <label className="form-field validation-required" htmlFor="asset-model"><span><Tag /> Modelo <em>VALIDAR</em></span><Input id="asset-model" value={form.model} onChange={(event) => update('model', event.target.value)} placeholder="Ej. 1LE1" /><small>No confundir con el tipo general del equipo.</small></label>
+                <label className="form-field form-span-two" htmlFor="asset-serial"><span><Hash /> Número de serie</span><Input id="asset-serial" value={form.serialNumber} onChange={(event) => update('serialNumber', event.target.value)} placeholder="Ej. SN-2026-004" /><small>Regístralo si está disponible y legible en la placa.</small></label>
                 <label className="form-field" htmlFor="asset-hours"><span><Activity /> Horas actuales</span><Input id="asset-hours" type="number" min="0" step="0.1" value={form.hours} onChange={(event) => update('hours', event.target.value)} /></label>
                 <label className="form-field" htmlFor="asset-last-service-hours"><span><ClipboardCheck /> Horas en último servicio</span><Input id="asset-last-service-hours" type="number" min="0" step="0.1" value={form.lastServiceHours} onChange={(event) => update('lastServiceHours', event.target.value)} /></label>
                 <label className="form-field" htmlFor="asset-interval"><span><Wrench /> Intervalo preventivo</span><Input id="asset-interval" type="number" min="1" step="1" value={form.maintenanceInterval} onChange={(event) => update('maintenanceInterval', event.target.value)} /><small>Cantidad de horas entre un mantenimiento y el siguiente.</small></label>
