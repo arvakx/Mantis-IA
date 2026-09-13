@@ -1620,3 +1620,214 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
   .asset-sheet-fullscreen .asset-section-title > p { font-size: 13px; }
   .asset-sheet-fullscreen .asset-sheet-actions { padding: 14px 15px; }
 }
+
+/* Inventario: tabla técnica con jerarquía visual y estados reconocibles */
+.inventory-panel {
+  border-color: #d9e0f1;
+  background: rgba(255,255,255,.97);
+  box-shadow: 0 22px 54px rgba(33,43,84,.09);
+}
+.inventory-panel .inventory-section-head {
+  padding: 19px 20px;
+  border-bottom: 0;
+  background:
+    radial-gradient(circle at 0 0,rgba(96,67,230,.08),transparent 30%),
+    linear-gradient(110deg,#fff 0%,#fbfcff 58%,#f4f7ff 100%);
+}
+.inventory-section-head > div:first-child h3 {
+  color: #111a31;
+  font: 780 20px/1.2 var(--font-display);
+  letter-spacing: -.025em;
+}
+.inventory-section-head > div:first-child p {
+  margin-top: 5px;
+  color: #65728b;
+  font: 550 13px/1.4 var(--font-body);
+}
+.inventory-panel .machine-table {
+  overflow: hidden;
+  border-top: 1px solid #dfe5f1;
+  background: #fff;
+}
+.inventory-panel .machine-row {
+  position: relative;
+  min-height: 78px;
+  grid-template-columns: minmax(240px,1.5fr) minmax(128px,.74fr) 96px minmax(132px,.78fr) minmax(138px,.84fr) 34px;
+  gap: 12px;
+  padding-inline: 20px 16px;
+  border-bottom-color: #e6ebf4;
+  color: #1b2540;
+  background: #fff;
+}
+.inventory-panel button.machine-row:nth-of-type(even) {
+  background: #fbfcff;
+}
+.inventory-panel button.machine-row::before {
+  content: '';
+  position: absolute;
+  top: 14px;
+  bottom: 14px;
+  left: 0;
+  width: 4px;
+  border-radius: 0 5px 5px 0;
+  background: transparent;
+  transition: width .18s ease,background-color .18s ease;
+}
+.inventory-panel button.machine-row[data-status='Vencida']::before { background: #ff5f78; }
+.inventory-panel button.machine-row[data-status='Atención próxima']::before { background: #f2ad32; }
+.inventory-panel button.machine-row[data-status='Operativa']::before { background: #1bc8ad; }
+.inventory-panel button.machine-row:hover {
+  z-index: 1;
+  background: linear-gradient(90deg,#f7f5ff 0%,#fbfdff 56%,#f1fffb 100%);
+  box-shadow: inset 0 1px #e4defc,inset 0 -1px #e4defc,0 10px 24px rgba(54,42,113,.07);
+}
+.inventory-panel button.machine-row:hover::before,
+.inventory-panel button.machine-row.selected::before { width: 6px; }
+.inventory-panel button.machine-row.selected {
+  z-index: 1;
+  background:
+    radial-gradient(circle at 92% 50%,rgba(36,213,189,.1),transparent 24%),
+    linear-gradient(90deg,#f2efff 0%,#f8f8ff 54%,#f5fffd 100%);
+  box-shadow: inset 0 1px #ddd5ff,inset 0 -1px #ddd5ff,0 12px 30px rgba(74,51,166,.09);
+}
+.inventory-panel .machine-row.table-head {
+  min-height: 46px;
+  padding-inline: 20px 16px;
+  color: #dce6ff;
+  border: 0;
+  background:
+    radial-gradient(circle at 87% 10%,rgba(37,224,202,.19),transparent 23%),
+    linear-gradient(105deg,#111a39 0%,#1c2852 58%,#273771 100%);
+  font: 780 11px/1.2 var(--font-body);
+  letter-spacing: .075em;
+  text-transform: uppercase;
+}
+.inventory-panel .machine-identity { gap: 13px; }
+.inventory-panel .machine-identity i {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  border: 1px solid #d9d5f6;
+  border-radius: 14px;
+  color: #6246e6;
+  background: linear-gradient(145deg,#f5f2ff,#eae5ff);
+  box-shadow: 0 7px 16px rgba(93,70,196,.11),inset 0 1px rgba(255,255,255,.9);
+}
+.inventory-panel button.machine-row[data-status='Vencida'] .machine-identity i {
+  color: #da405b;
+  border-color: #ffcbd4;
+  background: linear-gradient(145deg,#fff4f6,#ffe2e8);
+  box-shadow: 0 7px 16px rgba(216,64,90,.11),inset 0 1px rgba(255,255,255,.9);
+}
+.inventory-panel button.machine-row[data-status='Atención próxima'] .machine-identity i {
+  color: #b87705;
+  border-color: #f8d693;
+  background: linear-gradient(145deg,#fffaf0,#ffedc8);
+  box-shadow: 0 7px 16px rgba(207,141,22,.1),inset 0 1px rgba(255,255,255,.9);
+}
+.inventory-panel button.machine-row[data-status='Operativa'] .machine-identity i {
+  color: #078e7c;
+  border-color: #a8e9df;
+  background: linear-gradient(145deg,#effffb,#d7f9f2);
+  box-shadow: 0 7px 16px rgba(18,161,141,.1),inset 0 1px rgba(255,255,255,.9);
+}
+.inventory-panel .machine-identity i svg { width: 20px; stroke-width: 2.1; }
+.inventory-panel .machine-identity strong {
+  color: #111b35;
+  font: 750 16px/1.25 var(--font-display);
+  letter-spacing: -.012em;
+}
+.inventory-panel .machine-identity small {
+  margin-top: 5px;
+  color: #64738e;
+  font: 600 12px/1.25 var(--font-tech);
+  letter-spacing: .015em;
+}
+.inventory-panel .status-badge {
+  min-height: 29px;
+  gap: 7px;
+  padding-inline: 10px;
+  border-radius: 999px;
+  font: 750 12px/1 var(--font-body);
+  box-shadow: inset 0 1px rgba(255,255,255,.72);
+}
+.inventory-panel .status-badge::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 0 3px color-mix(in srgb,currentColor 14%,transparent);
+}
+.inventory-panel .mono-value {
+  color: #19243f;
+  font: 780 15px/1.2 var(--font-numbers);
+  letter-spacing: -.015em;
+}
+.inventory-panel .due-value,
+.inventory-panel .due-critical {
+  font: 650 14px/1.3 var(--font-body);
+}
+.inventory-panel .due-value { color: #5f6e88; }
+.inventory-panel .due-critical { color: #db3855; font-weight: 800; }
+.inventory-panel .condition-cell {
+  grid-template-columns: 52px 1fr;
+  gap: 10px;
+}
+.inventory-panel .condition-cell strong {
+  color: #19243f;
+  font: 780 14px/1 var(--font-numbers);
+  letter-spacing: -.025em;
+}
+.inventory-panel .condition-cell i {
+  height: 7px;
+  padding: 1px;
+  border: 1px solid #e0e5ef;
+  background: #edf1f7;
+  box-shadow: inset 0 1px 2px rgba(39,49,79,.08);
+}
+.inventory-panel .condition-cell b {
+  background: linear-gradient(90deg,#7050f4 0%,#24cfd0 52%,#b9f43e 100%);
+  box-shadow: 0 0 8px rgba(36,207,208,.22);
+}
+.inventory-panel .row-arrow {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid #e0e5f0;
+  border-radius: 10px;
+  color: #65718a;
+  background: rgba(255,255,255,.8);
+  transition: color .18s ease,border-color .18s ease,transform .18s ease,background-color .18s ease;
+}
+.inventory-panel .row-arrow svg { width: 17px; }
+.inventory-panel button.machine-row:hover .row-arrow,
+.inventory-panel button.machine-row.selected .row-arrow {
+  color: #fff;
+  border-color: #6746f7;
+  background: #6746f7;
+  transform: translateX(2px);
+}
+
+@media (max-width:1280px) {
+  .inventory-panel .machine-row {
+    grid-template-columns: minmax(210px,1.4fr) minmax(116px,.72fr) 82px minmax(112px,.74fr) minmax(118px,.76fr) 32px;
+    gap: 9px;
+  }
+}
+
+@media (max-width:680px) {
+  .inventory-panel .machine-row {
+    min-height: 76px;
+    grid-template-columns: minmax(0,1fr) auto 32px;
+    padding: 10px 13px 10px 17px;
+  }
+  .inventory-panel .machine-row > span:nth-child(3),
+  .inventory-panel .machine-row > span:nth-child(4),
+  .inventory-panel .machine-row > span:nth-child(5) { display: none; }
+  .inventory-panel .machine-identity strong { font-size: 15px; }
+  .inventory-panel .machine-identity small { font-size: 11px; }
+  .inventory-panel .status-badge { min-height: 27px; padding-inline: 8px; font-size: 11px; }
+}

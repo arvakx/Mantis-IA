@@ -429,7 +429,7 @@ export default function Home() {
     return items.map((machine) => {
       const difference = getNextServiceAt(machine) - machine.hours;
       return (
-        <button key={machine.id} className={`machine-row ${selected.id === machine.id ? 'selected' : ''}`} aria-current={selected.id === machine.id ? 'true' : undefined} onClick={() => setSelectedId(machine.id)}>
+        <button key={machine.id} data-status={machine.status} className={`machine-row ${selected.id === machine.id ? 'selected' : ''}`} aria-current={selected.id === machine.id ? 'true' : undefined} onClick={() => setSelectedId(machine.id)}>
           <span className="machine-identity"><i><Activity /></i><span><strong>{machine.name}</strong><small>{machine.id} · {machine.location}</small></span></span>
           <span><Badge className={`status-badge ${statusStyles[machine.status]}`}>{machine.status}</Badge></span>
           <span className="mono-value">{formatHours(machine.hours)} h</span>
