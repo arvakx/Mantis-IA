@@ -2000,3 +2000,63 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
   .inventory-content .detail-actions button { height: 36px; }
   .inventory-content .activity-card { max-height: 146px; }
 }
+
+/* Mantiene visibles las cuatro acciones de la ficha en pantallas de escritorio */
+@media (min-width:1201px) {
+  .inventory-content .detail-actions.detail-actions-four {
+    grid-template-columns: repeat(4,minmax(0,1fr));
+  }
+  .inventory-content .detail-actions.detail-actions-four button {
+    min-width: 0;
+    gap: 4px;
+    padding-inline: 5px;
+    white-space: nowrap;
+  }
+  .inventory-content .detail-actions.detail-actions-four button svg {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+/* En escritorios bajos, gana espacio para la ficha sin desplazar toda la página */
+@media (min-width:1201px) and (min-height:760px) and (max-height:1000px) {
+  .inventory-content {
+    padding-top: 18px;
+    padding-bottom: 14px;
+  }
+  .inventory-content .inventory-intro {
+    margin-bottom: 12px;
+    padding-block: 18px;
+  }
+  .inventory-content .inventory-heading h2 { font-size: 31px; }
+  .inventory-content .inventory-metrics { margin-bottom: 12px; }
+  .inventory-content .inventory-layout > .detail-column {
+    grid-template-rows: minmax(0,1fr) 112px;
+    gap: 10px;
+  }
+  .inventory-content .machine-detail { padding: 12px 13px; }
+  .inventory-content .detail-score {
+    margin-block: 6px;
+    padding: 7px 9px;
+  }
+  .inventory-content .score-ring { width: 50px; height: 50px; }
+  .inventory-content .service-state-banner {
+    margin-block: 6px;
+    padding: 7px 9px;
+  }
+  .inventory-content .detail-stats { gap: 4px; padding-bottom: 6px; }
+  .inventory-content .detail-stats div { padding: 5px 7px; }
+  .inventory-content .next-task { padding-top: 6px; }
+  .inventory-content .next-task > p {
+    margin-block: 2px 5px;
+    -webkit-line-clamp: 1;
+  }
+  .inventory-content .detail-actions { margin-top: 6px; }
+  .inventory-content .detail-actions button { height: 34px; font-size: 10px; }
+  .inventory-content .activity-card {
+    height: 112px;
+    max-height: none;
+  }
+  .inventory-content .activity-card .section-head { padding: 9px 12px 5px; }
+  .inventory-content .activity-empty { margin: 4px 8px 7px; padding: 7px 9px; }
+}
