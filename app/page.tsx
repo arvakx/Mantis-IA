@@ -28,7 +28,7 @@ import {
   type Machine,
   type MachineStatus,
 } from '@/lib/machines';
-import type { MaintenanceCase } from '@/lib/maintenance-cases';
+import { migrateMaintenanceCase, type MaintenanceCase } from '@/lib/maintenance-cases';
 import { formatMaintenanceDate, formatMaintenanceDay, type MaintenanceRecord } from '@/lib/maintenance-records';
 import { formatReadingDate, type MeterReading } from '@/lib/meter-readings';
 
@@ -194,8 +194,8 @@ export default function Home() {
       const saved = window.localStorage.getItem(CASES_STORAGE_KEY);
       if (saved) {
         try {
-          const parsed = JSON.parse(saved) as MaintenanceCase[];
-          if (Array.isArray(parsed)) setMaintenanceCases(parsed);
+          const parsed = JSON.parse(saved) as Parameters<typeof migrateMaintenanceCase>[0][];
+          if (Array.isArray(parsed)) setMaintenanceCases(parsed.map(migrateMaintenanceCase));
         } catch {
           window.localStorage.removeItem(CASES_STORAGE_KEY);
         }

@@ -25,7 +25,6 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select';
 import { Progress } from '@/components/ui/progress';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
 import type { Machine } from '@/lib/machines';
 import type {
@@ -48,7 +47,7 @@ type CaseForm = {
   failureMode: string;
   failureCause: string;
   failureEffect: string;
-  consequence: ConsequenceCategory;
+  consequences: ConsequenceCategory[];
   consequenceReason: string;
   proposedTask: string;
   taskStrategy: TaskStrategy;
@@ -74,6 +73,15 @@ const taskStrategies: TaskStrategy[] = [
   'Rediseño',
 ];
 
+const taskStrategyHelp: Record<TaskStrategy, string> = {
+  'Por condición': 'Medir o inspeccionar una señal de deterioro y actuar cuando alcance un límite definido.',
+  'Restauración programada': 'Restaurar la capacidad del elemento a una edad u horas establecidas, aunque todavía funcione.',
+  'Sustitución programada': 'Reemplazar el elemento a una edad u horas establecidas antes de que falle.',
+  'Búsqueda de falla': 'Probar periódicamente una función oculta o de protección para descubrir si dejó de funcionar.',
+  'Operar hasta fallar': 'No realizar una tarea preventiva y reparar después de la falla, solo cuando el riesgo sea aceptable.',
+  'Rediseño': 'Modificar el equipo o el proceso cuando ninguna tarea de mantenimiento reduce suficientemente la consecuencia.',
+};
+
 export function MaintenanceCaseWorkspace({ machines, onClose, onSave }: MaintenanceCaseWorkspaceProps) {
   const [form, setForm] = useState<CaseForm>({
     machineId: machines[0]?.id ?? '',
@@ -83,7 +91,7 @@ export function MaintenanceCaseWorkspace({ machines, onClose, onSave }: Maintena
     failureMode: '',
     failureCause: '',
     failureEffect: '',
-    consequence: 'Operacional',
+    consequences: [],
     consequenceReason: '',
     proposedTask: '',
     taskStrategy: 'Por condición',
@@ -102,7 +110,7 @@ export function MaintenanceCaseWorkspace({ machines, onClose, onSave }: Maintena
     { label: 'Falla funcional descrita', complete: Boolean(form.functionalFailure.trim()) },
     { label: 'Modo y causa de falla', complete: Boolean(form.failureMode.trim() && form.failureCause.trim()) },
     { label: 'Efecto observable explicado', complete: Boolean(form.failureEffect.trim()) },
-    { label: 'Consecuencia justificada', complete: Boolean(form.consequence && form.consequenceReason.trim()) },
+    { label: 'Consecuencia justificada', complete: Boolean(form.consequences.length > 0 && form.consequenceReason.trim()) },
     { label: 'Política o tarea propuesta', complete: Boolean(form.proposedTask.trim() && form.taskStrategy) },
     { label: 'Intervalo o disparador definido', complete: Boolean(form.intervalTrigger.trim()) },
     { label: 'Fuente técnica trazable', complete: Boolean(form.source.trim()) },
@@ -111,12 +119,18 @@ export function MaintenanceCaseWorkspace({ machines, onClose, onSave }: Maintena
   const completedChecks = qualityChecks.filter((item) => item.complete).length;
   const completeness = Math.round((completedChecks / qualityChecks.length) * 100);
   const reviewStatus = completeness === 100
-    ? form.expertApproved && form.reviewedBy.trim() ? 'Validado por experto' : 'Listo para revisión'
+    ? form.expertApproved && form.reviewedBy.trim() ? 'Validado por técnico' : 'Listo para revisión'
     : 'Borrador';
 
   function update<Key extends keyof CaseForm>(key: Key, value: CaseForm[Key]) {
     setForm((current) => ({ ...current, [key]: value }));
     setError(null);
+  }
+
+  function toggleConsequence(consequence: ConsequenceCategory, checked: boolean) {
+    update('consequences', checked
+      ? Array.from(new Set([...form.consequences, consequence]))
+      : form.consequences.filter((item) => item !== consequence));
   }
 
   function submit(event: SyntheticEvent<HTMLFormElement>) {
@@ -130,7 +144,7 @@ export function MaintenanceCaseWorkspace({ machines, onClose, onSave }: Maintena
       return;
     }
     if (form.expertApproved && !form.reviewedBy.trim()) {
-      setError('Escribe el nombre del profesor o técnico que realizó la revisión.');
+      setError('Escribe el nombre del técnico que realizó la revisión.');
       return;
     }
 
@@ -145,7 +159,7 @@ export function MaintenanceCaseWorkspace({ machines, onClose, onSave }: Maintena
       failureMode: form.failureMode.trim(),
       failureCause: form.failureCause.trim(),
       failureEffect: form.failureEffect.trim(),
-      consequence: form.consequence,
+      consequences: form.consequences,
       consequenceReason: form.consequenceReason.trim(),
       proposedTask: form.proposedTask.trim(),
       taskStrategy: form.taskStrategy,
@@ -198,27 +212,31 @@ export function MaintenanceCaseWorkspace({ machines, onClose, onSave }: Maintena
           </section>
 
           <section className="case-section">
-            <div className="case-section-heading"><span>03</span><div><h3>Consecuencia de la falla</h3><p>El contexto determina la importancia real de una misma falla.</p></div></div>
-            <RadioGroup className="consequence-grid" value={form.consequence} onValueChange={(value) => update('consequence', value as ConsequenceCategory)}>
-              {consequenceOptions.map(({ value, label, detail, icon: Icon }) => <label htmlFor={`consequence-${value}`} className="consequence-option" key={value}><RadioGroupItem id={`consequence-${value}`} value={value} /><Icon /><div><strong>{label}</strong><span>{detail}</span></div></label>)}
-            </RadioGroup>
-            <label className="form-field case-consequence-reason" htmlFor="consequence-reason"><span>¿Por qué pertenece a esta categoría?</span><Textarea id="consequence-reason" value={form.consequenceReason} onChange={(event) => update('consequenceReason', event.target.value)} placeholder="Describe el impacto concreto si no se actúa." /></label>
+            <div className="case-section-heading"><span>03</span><div><h3>Consecuencias de la falla</h3><p>Selecciona todas las consecuencias que realmente apliquen en este contexto.</p></div></div>
+            <fieldset className="consequence-fieldset">
+              <legend className="sr-only">Consecuencias de la falla; permite selección múltiple</legend>
+              <div className="consequence-grid">
+                {consequenceOptions.map(({ value, label, detail, icon: Icon }) => <label htmlFor={`consequence-${value}`} className="consequence-option" key={value}><Checkbox id={`consequence-${value}`} checked={form.consequences.includes(value)} onCheckedChange={(checked) => toggleConsequence(value, Boolean(checked))} /><Icon /><div><strong>{label}</strong><span>{detail}</span></div></label>)}
+              </div>
+            </fieldset>
+            <p className="consequence-help">Puedes marcar varias. Para la puerta de calidad siguen contando como un solo criterio y debes justificar cada impacto seleccionado.</p>
+            <label className="form-field case-consequence-reason" htmlFor="consequence-reason"><span>¿Por qué aplica cada consecuencia seleccionada?</span><Textarea id="consequence-reason" value={form.consequenceReason} onChange={(event) => update('consequenceReason', event.target.value)} placeholder="Describe por separado los impactos de seguridad, ambientales, operacionales o económicos que correspondan." /></label>
           </section>
 
           <section className="case-section case-decision-section">
             <div className="case-section-heading"><span>04</span><div><h3>Decisión de mantenimiento</h3><p>La tarea debe actuar sobre el modo de falla o reducir su consecuencia.</p></div></div>
             <div className="case-grid">
               <label className="form-field case-full" htmlFor="proposed-task"><span><Wrench /> Tarea o política propuesta</span><Textarea id="proposed-task" value={form.proposedTask} onChange={(event) => update('proposedTask', event.target.value)} placeholder="¿Qué acción concreta propone y sobre qué modo de falla actúa?" /></label>
-              <label className="form-field" htmlFor="task-strategy"><span>Estrategia RCM</span><NativeSelect id="task-strategy" className="form-native-select" value={form.taskStrategy} onChange={(event) => update('taskStrategy', event.target.value as TaskStrategy)}>{taskStrategies.map((strategy) => <NativeSelectOption value={strategy} key={strategy}>{strategy}</NativeSelectOption>)}</NativeSelect></label>
+              <label className="form-field" htmlFor="task-strategy"><span>Estrategia RCM</span><NativeSelect id="task-strategy" className="form-native-select" value={form.taskStrategy} onChange={(event) => update('taskStrategy', event.target.value as TaskStrategy)}>{taskStrategies.map((strategy) => <NativeSelectOption value={strategy} key={strategy}>{strategy}</NativeSelectOption>)}</NativeSelect><small>{taskStrategyHelp[form.taskStrategy]}</small></label>
               <label className="form-field" htmlFor="interval-trigger"><span>Intervalo o disparador</span><Input id="interval-trigger" value={form.intervalTrigger} onChange={(event) => update('intervalTrigger', event.target.value)} placeholder="Ej. Cada 250 h o ΔP superior a 0,4 bar" /></label>
-              <label className="form-field case-full" htmlFor="case-source"><span><FileCheck2 /> Fuente técnica</span><Input id="case-source" value={form.source} onChange={(event) => update('source', event.target.value)} placeholder="Manual y sección, historial, medición o criterio del experto" /></label>
+              <label className="form-field case-full" htmlFor="case-source"><span><FileCheck2 /> Fuente técnica</span><Input id="case-source" value={form.source} onChange={(event) => update('source', event.target.value)} placeholder="Manual y sección, historial, medición o criterio del técnico" /></label>
             </div>
           </section>
 
           <section className="case-section review-section">
             <div className="case-section-heading"><span>05</span><div><h3>Revisión humana</h3><p>El software organiza la evidencia; una persona competente valida la decisión.</p></div></div>
             <div className="review-grid">
-              <label className="form-field" htmlFor="reviewer-name"><span>Profesor o técnico revisor</span><Input id="reviewer-name" value={form.reviewedBy} onChange={(event) => update('reviewedBy', event.target.value)} placeholder="Nombre del responsable de la revisión" /></label>
+              <label className="form-field" htmlFor="reviewer-name"><span>Técnico revisor</span><Input id="reviewer-name" value={form.reviewedBy} onChange={(event) => update('reviewedBy', event.target.value)} placeholder="Nombre del técnico responsable de la revisión" /></label>
               <label className="approval-check" htmlFor="expert-approval"><Checkbox id="expert-approval" checked={form.expertApproved} onCheckedChange={(checked) => update('expertApproved', Boolean(checked))} /><span><strong>Confirmo revisión técnica</strong><small>La cadena RCM y la tarea propuesta fueron revisadas con la evidencia indicada.</small></span></label>
             </div>
           </section>
@@ -229,11 +247,11 @@ export function MaintenanceCaseWorkspace({ machines, onClose, onSave }: Maintena
         <aside className="quality-gate">
           <div className="quality-sticky">
             <div className="quality-heading"><div><ShieldAlert /></div><span>PUERTA DE CALIDAD RCM</span></div>
-            <div className="quality-score"><strong>{completeness}</strong><span>%</span><p>estructura completa</p></div>
+            <div className="quality-score"><strong>{completeness}</strong><span>%</span><p>{completedChecks} de {qualityChecks.length} criterios completos</p></div>
             <Progress value={completeness} className="quality-progress" />
             <div className="quality-list">{qualityChecks.map((item) => <div className={item.complete ? 'complete' : ''} key={item.label}><span>{item.complete ? <Check /> : null}</span><p>{item.label}</p></div>)}</div>
-            <div className={`review-state ${reviewStatus === 'Validado por experto' ? 'validated' : reviewStatus === 'Listo para revisión' ? 'ready' : ''}`}><span>ESTADO</span><strong>{reviewStatus}</strong></div>
-            <div className="quality-warning"><Sparkles /><p><strong>Completitud no significa corrección.</strong> Mantis verifica que la cadena exista; el experto confirma que sea coherente y técnicamente válida.</p></div>
+            <div className={`review-state ${reviewStatus === 'Validado por técnico' ? 'validated' : reviewStatus === 'Listo para revisión' ? 'ready' : ''}`}><span>ESTADO</span><strong>{reviewStatus}</strong></div>
+            <div className="quality-warning"><Sparkles /><p><strong>Completitud no significa corrección.</strong> Mantis verifica que la cadena exista; el técnico confirma que sea coherente y técnicamente válida.</p></div>
             <div className="quality-actions"><Button type="button" variant="ghost" onClick={onClose}>Cancelar</Button><Button type="submit"><Save data-icon="inline-start" /> Guardar caso</Button></div>
           </div>
         </aside>
