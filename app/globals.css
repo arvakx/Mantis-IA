@@ -2001,8 +2001,19 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
   .inventory-content .activity-card { max-height: 146px; }
 }
 
+/* Los indicadores superiores concentran el filtrado; los controles repetidos quedan reservados */
+.inventory-content .inventory-section-head .filter-pills {
+  display: none;
+}
+
 /* Mantiene visibles las cuatro acciones de la ficha en pantallas de escritorio */
 @media (min-width:1201px) {
+  .inventory-content .inventory-controls {
+    flex: 1 1 auto;
+  }
+  .inventory-content .inventory-search {
+    width: min(38vw,460px);
+  }
   .inventory-content .detail-actions.detail-actions-four {
     grid-template-columns: repeat(4,minmax(0,1fr));
   }
