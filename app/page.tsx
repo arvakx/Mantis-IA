@@ -458,7 +458,7 @@ export default function Home() {
       <article className="activity-card">
         <div className="section-head compact"><div><h3>Actividad reciente</h3><p>Trazabilidad de esta máquina</p></div><button onClick={() => setAssetProfileOpen(true)}>Abrir ficha</button></div>
         {selectedActivityItems.map((item) => <div className="activity-item" key={`${item.kind}-${item.id}`}><span className={`activity-dot ${item.kind === 'maintenance' ? 'success' : item.kind === 'rcm' ? 'violet' : 'warning'}`}>{item.kind === 'maintenance' ? <Wrench /> : item.kind === 'rcm' ? <ClipboardCheck /> : <Clock3 />}</span><div><strong>{item.title}</strong><p>{item.detail} · {item.kind === 'maintenance' ? formatMaintenanceDate(item.at) : item.kind === 'reading' ? formatReadingDate(item.at) : formatMaintenanceDate(item.at)}</p></div></div>)}
-        {selectedActivityItems.length === 0 && <div className="activity-empty"><Clock3 /><strong>Sin actividad registrada</strong><span>Las lecturas, intervenciones y casos RCM de esta máquina aparecerán aquí.</span></div>}
+        {selectedActivityItems.length === 0 && <div className="activity-empty"><Clock3 /><strong>Sin actividad registrada</strong><span>Las lecturas, servicios y casos RCM aparecerán aquí.</span></div>}
       </article>
     </aside>
   );

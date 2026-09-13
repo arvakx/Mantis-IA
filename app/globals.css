@@ -2042,7 +2042,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
   .inventory-content .inventory-heading h2 { font-size: 31px; }
   .inventory-content .inventory-metrics { margin-bottom: 12px; }
   .inventory-content .inventory-layout > .detail-column {
-    grid-template-rows: minmax(0,1fr) 112px;
+    grid-template-rows: minmax(0,1fr) 132px;
     gap: 10px;
   }
   .inventory-content .machine-detail { padding: 12px 13px; }
@@ -2065,9 +2065,50 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
   .inventory-content .detail-actions { margin-top: 6px; }
   .inventory-content .detail-actions button { height: 34px; font-size: 10px; }
   .inventory-content .activity-card {
-    height: 112px;
+    height: 132px;
     max-height: none;
+    border-color: #d8e0f1;
+    background: linear-gradient(120deg,#fff 0%,#fbfcff 62%,#f4f1ff 100%);
   }
-  .inventory-content .activity-card .section-head { padding: 9px 12px 5px; }
-  .inventory-content .activity-empty { margin: 4px 8px 7px; padding: 7px 9px; }
+  .inventory-content .activity-card .section-head { padding: 10px 13px 6px; }
+  .inventory-content .activity-card .section-head h3 {
+    color: #172039;
+    font: 760 17px/1.2 var(--font-display);
+  }
+  .inventory-content .activity-card .section-head p {
+    margin-top: 3px;
+    color: #68758e;
+    font: 550 12px/1.3 var(--font-body);
+  }
+  .inventory-content .activity-card .section-head button {
+    padding: 5px 8px;
+    color: #6042df;
+    border-radius: 8px;
+    background: #f0edff;
+    font: 750 12px/1 var(--font-body);
+  }
+  .inventory-content .activity-empty {
+    grid-template-columns: 32px minmax(0,1fr);
+    column-gap: 10px;
+    row-gap: 2px;
+    margin: 4px 9px 9px;
+    padding: 8px 10px;
+    background: rgba(248,250,255,.92);
+  }
+  .inventory-content .activity-empty svg {
+    width: 30px;
+    height: 30px;
+    padding: 6px;
+    border-radius: 9px;
+    background: #ece8ff;
+  }
+  .inventory-content .activity-empty strong {
+    color: #28334c;
+    font: 750 12px/1.25 var(--font-body);
+  }
+  .inventory-content .activity-empty span {
+    margin-top: 0;
+    color: #67738b;
+    font: 550 12px/1.3 var(--font-body);
+  }
 }
