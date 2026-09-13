@@ -1947,3 +1947,56 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .inventory-panel .machine-identity > span:last-child { min-width: 0; }
 .inventory-panel .machine-identity { overflow: hidden; }
 .inventory-panel .machine-identity small { width: 100%; max-width: 100%; }
+
+/* Resumen del inventario más compacto sin quitarle protagonismo a la ficha */
+@media (min-width:921px) {
+  .inventory-metrics {
+    gap: 11px;
+    margin-bottom: 14px;
+  }
+  .inventory-metrics .metric-card {
+    min-height: 104px;
+    gap: 12px;
+    padding: 14px 15px;
+    border-radius: 14px;
+  }
+  .inventory-metrics .metric-icon {
+    width: 41px;
+    height: 41px;
+    border-radius: 12px;
+  }
+  .inventory-metrics .metric-icon svg { width: 19px; }
+  .inventory-metrics .metric-card p { margin-bottom: 2px; font-size: 13px; }
+  .inventory-metrics .metric-card strong { font-size: 31px; }
+  .inventory-metrics .metric-card span { margin-top: 4px; font-size: 12px; }
+  .inventory-metrics .metric-arrow { top: 12px; right: 12px; width: 14px; }
+  .inventory-metrics .mini-bars,
+  .inventory-metrics .mini-trend {
+    right: 12px;
+    bottom: 12px;
+    transform: scale(.82);
+    transform-origin: right bottom;
+  }
+  .inventory-metrics .metric-mini-ring {
+    right: 15px;
+    bottom: 12px;
+    width: 46px;
+    height: 46px;
+  }
+  .inventory-metrics .metric-mini-ring::before { inset: 5px; }
+}
+
+@media (min-width:1201px) {
+  .inventory-layout {
+    grid-template-columns: minmax(0,1.68fr) minmax(365px,.68fr);
+  }
+}
+
+@media (min-width:1201px) and (min-height:760px) {
+  .inventory-content .machine-detail { padding: 15px 16px; }
+  .inventory-content .detail-score { margin-block: 9px; padding: 9px 11px; }
+  .inventory-content .score-ring { width: 56px; height: 56px; }
+  .inventory-content .service-state-banner { padding-block: 9px; }
+  .inventory-content .detail-actions button { height: 36px; }
+  .inventory-content .activity-card { max-height: 146px; }
+}
