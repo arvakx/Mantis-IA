@@ -503,8 +503,8 @@ export default function Home() {
           <button hidden data-future-feature="settings" className="nav-item"><Settings aria-hidden="true" /><span>Configuración</span></button>
         </nav>
 
-        <div className="rail-foot">
-          <div className="system-pulse"><span /> Sistema estable</div>
+        <div className="rail-foot" title="Indica que la interfaz de demostración está disponible; no representa monitoreo de las máquinas.">
+          <div className="system-pulse"><span /> Prototipo activo</div>
           <p>Demo científica · v0.1</p>
         </div>
       </aside>
